@@ -13,8 +13,8 @@ import dynamic from "next/dynamic"
 // Dynamically import the location picker to avoid SSR issues with Leaflet
 const LocationPicker = dynamic(() => import("@/components/admin/location-picker"), { ssr: false })
 
-// Dynamically import the map component to avoid SSR issues with Leaflet
-const PackageLocationMap = dynamic(() => import("@/components/map/package-location-map"), { ssr: false })
+// Import the simple map component
+const SimplePackageMap = dynamic(() => import("@/components/map/simple-package-map"), { ssr: false })
 
 const statusColors = {
   pending: "bg-yellow-500",
@@ -170,7 +170,10 @@ export default async function PackageDetailsPage({ params }: { params: { id: str
                 {/* Current location map */}
                 <div className="space-y-2">
                   <h3 className="text-lg font-medium">Current Location</h3>
-                  <PackageLocationMap packageData={packageData} checkpoints={packageData.checkpoints} />
+                  <SimplePackageMap
+                    currentLocation={packageData.current_location}
+                    checkpoints={packageData.checkpoints}
+                  />
                 </div>
 
                 {/* Location picker */}
