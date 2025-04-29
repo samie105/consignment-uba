@@ -1,105 +1,127 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronLeft, ChevronRight, X, ZoomIn } from "lucide-react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react"
 
 interface ImageProps {
   id: string
   url: string
   alt: string
-  timestamp?: string
-  location?: string
-  type?: string
+  timestamp: string
+  location: string
+  type: string
 }
 
 export function PackageImageGallery({ images }: { images: ImageProps[] }) {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [isOpen, setIsOpen] = useState(false)
+  const [isZoomed, setIsZoomed] = useState(false)
 
-  const handlePrevious = () => {
-    setCurrentIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : images.length - 1))
+  const goToPrevious = () => {
+    const isFirstImage = currentIndex === 0
+    const newIndex = isFirstImage ? images.length - 1 : currentIndex - 1
+    setCurrentIndex(newIndex)
+    setIsZoomed(false)
   }
 
-  const handleNext = () => {
-    setCurrentIndex((prevIndex) => (prevIndex < images.length - 1 ? prevIndex + 1 : 0))
+  const goToNext = () => {
+    const isLastImage = currentIndex === images.length - 1
+    const newIndex = isLastImage ? 0 : currentIndex + 1
+    setCurrentIndex(newIndex)
+    setIsZoomed(false)
   }
 
-  const openLightbox = (index: number) => {
-    setCurrentIndex(index)
-    setIsOpen(true)
+  const toggleZoom = () => {
+    setIsZoomed(!isZoomed)
   }
+
+  if (!images || images.length === 0) {
+    return <div className="text-center py-8">No images available</div>
+  }
+
+  const currentImage = images[currentIndex]
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {images.map((image, index) => (
-          <div
-            key={image.id}
-            className="relative group overflow-hidden rounded-lg border cursor-pointer"
-            onClick={() => openLightbox(index)}
-          >
-            <div className="aspect-square overflow-hidden">
-              <img
-                src={image.url || "/placeholder.svg"}
-                alt={image.alt}
-                className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
-              />
-            </div>
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <ZoomIn className="text-white h-8 w-8" />
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white p-2 text-sm">
-              <p className="font-medium truncate">{image.location}</p>
-              <p className="text-xs opacity-80">{image.timestamp}</p>
-            </div>
-          </div>
-        ))}
+    <div className="relative">
+      {/* Main image container */}
+      <div
+        className={`relative overflow-hidden rounded-lg transition-all duration-300 ${
+          isZoomed ? "cursor-zoom-out" : "cursor-zoom-in"
+        }`}
+        onClick={toggleZoom}
+      >
+        <div
+          className={`transition-transform duration-300 ${isZoomed ? "scale-150" : "scale-100"}`}
+          style={{ transformOrigin: "center center" }}
+        >
+          <img
+            src={currentImage.url || "/placeholder.svg"}
+            alt={currentImage.alt}
+            className="w-full h-auto object-cover rounded-lg"
+            style={{ maxHeight: "500px", width: "100%", objectFit: "contain" }}
+          />
+        </div>
+
+        {/* Zoom button */}
+        <button
+          className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+          onClick={(e) => {
+            e.stopPropagation()
+            toggleZoom()
+          }}
+          aria-label={isZoomed ? "Zoom out" : "Zoom in"}
+        >
+          <ZoomIn className="h-5 w-5" />
+        </button>
       </div>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-4xl p-0 bg-black/90 border-gray-800">
-          <div className="relative">
-            <button
-              onClick={() => setIsOpen(false)}
-              className="absolute right-4 top-4 z-10 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
-            >
-              <X className="h-5 w-5" />
-            </button>
+      {/* Image metadata */}
+      <div className="mt-4 p-4 bg-muted/20 rounded-lg">
+        <p className="text-sm font-medium">{currentImage.alt}</p>
+        <div className="flex flex-col sm:flex-row sm:justify-between mt-2 text-sm text-muted-foreground">
+          <p>{currentImage.timestamp}</p>
+          <p>{currentImage.location}</p>
+        </div>
+      </div>
 
-            <div className="flex items-center justify-center min-h-[300px] md:min-h-[500px]">
-              <img
-                src={images[currentIndex]?.url || "/placeholder.svg"}
-                alt={images[currentIndex]?.alt}
-                className="max-h-[80vh] max-w-full object-contain"
+      {/* Navigation controls */}
+      {images.length > 1 && (
+        <div className="flex justify-between mt-4">
+          <button
+            onClick={goToPrevious}
+            className="p-2 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
+            aria-label="Previous image"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+
+          <div className="flex items-center space-x-2">
+            {images.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setCurrentIndex(index)
+                  setIsZoomed(false)
+                }}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  index === currentIndex ? "bg-primary" : "bg-primary/30"
+                }`}
+                aria-label={`Go to image ${index + 1}`}
               />
-            </div>
-
-            <div className="absolute inset-y-0 left-4 flex items-center">
-              <button onClick={handlePrevious} className="rounded-full bg-black/50 p-2 text-white hover:bg-black/70">
-                <ChevronLeft className="h-6 w-6" />
-              </button>
-            </div>
-
-            <div className="absolute inset-y-0 right-4 flex items-center">
-              <button onClick={handleNext} className="rounded-full bg-black/50 p-2 text-white hover:bg-black/70">
-                <ChevronRight className="h-6 w-6" />
-              </button>
-            </div>
-
-            <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-4">
-              <p className="font-medium">{images[currentIndex]?.alt}</p>
-              <div className="flex justify-between text-sm mt-1">
-                <span>{images[currentIndex]?.location}</span>
-                <span>{images[currentIndex]?.timestamp}</span>
-              </div>
-            </div>
+            ))}
           </div>
-        </DialogContent>
-      </Dialog>
+
+          <button
+            onClick={goToNext}
+            className="p-2 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
+            aria-label="Next image"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
-// Also export as default for backward compatibility
+// Add default export for backward compatibility
 export default PackageImageGallery

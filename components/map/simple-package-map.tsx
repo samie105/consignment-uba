@@ -1,185 +1,150 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { MapPin } from "lucide-react"
+import { useEffect, useRef } from "react"
 
 interface Coordinates {
   lat: number
   lng: number
 }
 
-interface Location {
+interface Checkpoint {
+  id: string
+  status: string
+  location: string
+  timestamp: string
+  details: string
+  isCompleted: boolean
   coordinates: Coordinates
-  address?: string
-  timestamp?: string
-  description?: string
-  location?: string
 }
 
-interface PackageMapProps {
-  packageData: any
-  checkpoints?: any[]
+interface PackageData {
+  trackingNumber: string
+  status: string
+  statusText: string
+  current_location: {
+    latitude: number
+    longitude: number
+    address: string
+  }
+}
+
+interface SimplePackageMapProps {
+  packageData: PackageData
+  checkpoints: Checkpoint[]
   height?: string
 }
 
-// Simple world map coordinates
-const MAP_WIDTH = 800
-const MAP_HEIGHT = 400
-
-export default function SimplePackageMap({ packageData, checkpoints = [], height = "400px" }: PackageMapProps) {
-  const [locations, setLocations] = useState<Location[]>([])
+export default function SimplePackageMap({ packageData, checkpoints, height = "300px" }: SimplePackageMapProps) {
+  const mapRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Collect all valid locations from checkpoints and current location
-    const validLocations: Location[] = []
+    // Simple map implementation that doesn't rely on external libraries
+    // This is a placeholder that shows the current location and checkpoints
+    if (!mapRef.current) return
 
-    // Add current location if available
-    if (packageData?.current_location?.latitude && packageData?.current_location?.longitude) {
-      validLocations.push({
-        coordinates: {
-          lat: packageData.current_location.latitude,
-          lng: packageData.current_location.longitude,
-        },
-        address: packageData.current_location.address,
-        description: "Current Location",
-        location: "Current Location",
-      })
-    }
+    const mapContainer = mapRef.current
+    mapContainer.innerHTML = ""
 
-    // Add checkpoints with valid coordinates
-    if (checkpoints && checkpoints.length > 0) {
-      checkpoints.forEach((checkpoint) => {
-        if (checkpoint.coordinates?.lat && checkpoint.coordinates?.lng) {
-          validLocations.push({
-            coordinates: {
-              lat: checkpoint.coordinates.lat,
-              lng: checkpoint.coordinates.lng,
-            },
-            address: checkpoint.address,
-            description: checkpoint.description,
-            location: checkpoint.location,
-            timestamp: checkpoint.timestamp,
-          })
-        }
-      })
-    }
+    // Create a simple map container
+    const mapDiv = document.createElement("div")
+    mapDiv.className = "relative w-full h-full bg-slate-100 rounded-lg overflow-hidden"
 
-    setLocations(validLocations)
+    // Add current location marker
+    const currentMarker = document.createElement("div")
+    currentMarker.className = "absolute w-4 h-4 bg-red-500 rounded-full z-20 animate-pulse"
+    currentMarker.style.transform = "translate(-50%, -50%)"
+
+    // Position the current marker (simplified positioning)
+    const { latitude, longitude } = packageData.current_location
+    // Simple scaling to position markers in the container
+    const latRange = 10 // Approximate range of latitudes to display
+    const lngRange = 20 // Approximate range of longitudes to display
+
+    const latMin = Math.min(...checkpoints.map((cp) => cp.coordinates.lat), latitude) - 1
+    const latMax = Math.max(...checkpoints.map((cp) => cp.coordinates.lat), latitude) + 1
+    const lngMin = Math.min(...checkpoints.map((cp) => cp.coordinates.lng), longitude) - 1
+    const lngMax = Math.max(...checkpoints.map((cp) => cp.coordinates.lng), longitude) + 1
+
+    // Position current marker
+    const currentX = ((longitude - lngMin) / (lngMax - lngMin)) * 100
+    const currentY = (1 - (latitude - latMin) / (latMax - latMin)) * 100
+    currentMarker.style.left = `${currentX}%`
+    currentMarker.style.top = `${currentY}%`
+
+    // Add checkpoint markers
+    checkpoints.forEach((checkpoint, index) => {
+      const { lat, lng } = checkpoint.coordinates
+      const markerX = ((lng - lngMin) / (lngMax - lngMin)) * 100
+      const markerY = (1 - (lat - latMin) / (latMax - latMin)) * 100
+
+      const marker = document.createElement("div")
+      marker.className = `absolute w-3 h-3 rounded-full z-10 ${checkpoint.isCompleted ? "bg-green-500" : "bg-gray-400"}`
+      marker.style.transform = "translate(-50%, -50%)"
+      marker.style.left = `${markerX}%`
+      marker.style.top = `${markerY}%`
+
+      // Add tooltip
+      marker.title = `${checkpoint.status} - ${checkpoint.location}`
+
+      mapDiv.appendChild(marker)
+
+      // Add connecting lines between checkpoints
+      if (index > 0) {
+        const prevCheckpoint = checkpoints[index - 1]
+        const prevX = ((prevCheckpoint.coordinates.lng - lngMin) / (lngMax - lngMin)) * 100
+        const prevY = (1 - (prevCheckpoint.coordinates.lat - latMin) / (latMax - latMin)) * 100
+
+        const line = document.createElement("div")
+        line.className = "absolute h-0.5 bg-gray-300 origin-left z-0"
+
+        // Calculate line position and rotation
+        const length = Math.sqrt(Math.pow(markerX - prevX, 2) + Math.pow(markerY - prevY, 2))
+        const angle = Math.atan2(markerY - prevY, markerX - prevX) * (180 / Math.PI)
+
+        line.style.width = `${length}%`
+        line.style.left = `${prevX}%`
+        line.style.top = `${prevY}%`
+        line.style.transform = `rotate(${angle}deg)`
+
+        mapDiv.appendChild(line)
+      }
+    })
+
+    // Add current location marker last so it's on top
+    mapDiv.appendChild(currentMarker)
+
+    // Add a legend
+    const legend = document.createElement("div")
+    legend.className = "absolute bottom-2 right-2 bg-white/80 p-2 rounded-md text-xs z-30"
+    legend.innerHTML = `
+      <div class="flex items-center gap-2 mb-1">
+        <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+        <span>Current Location</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+        <span>Checkpoint</span>
+      </div>
+    `
+
+    mapDiv.appendChild(legend)
+
+    // Add a disclaimer
+    const disclaimer = document.createElement("div")
+    disclaimer.className = "absolute top-2 left-2 bg-white/80 p-2 rounded-md text-xs z-30"
+    disclaimer.textContent = "Simplified map view - locations are approximate"
+
+    mapDiv.appendChild(disclaimer)
+
+    mapContainer.appendChild(mapDiv)
   }, [packageData, checkpoints])
 
-  // Convert lat/lng to x/y coordinates on the map
-  const latLngToPoint = (lat: number, lng: number) => {
-    // Simple conversion for demonstration
-    const x = ((lng + 180) / 360) * MAP_WIDTH
-    const y = ((90 - lat) / 180) * MAP_HEIGHT
-    return { x, y }
-  }
-
-  // If no locations, show a message
-  if (locations.length === 0) {
-    return (
-      <div style={{ height }} className="border border-gray-200 rounded-lg flex items-center justify-center bg-gray-50">
-        <p className="text-gray-500">No location data available</p>
-      </div>
-    )
-  }
-
   return (
-    <div style={{ height }} className="relative border border-gray-200 rounded-lg overflow-hidden">
-      {/* Simple world map background */}
-      <svg
-        width="100%"
-        height="100%"
-        viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
-        className="bg-blue-50"
-        preserveAspectRatio="xMidYMid meet"
-      >
-        {/* Simple world map outline - just a placeholder */}
-        <path d="M150,50 L650,50 L650,350 L150,350 Z" fill="none" stroke="#e5e7eb" strokeWidth="1" />
-
-        {/* Grid lines */}
-        {Array.from({ length: 5 }).map((_, i) => (
-          <line
-            key={`horizontal-${i}`}
-            x1="0"
-            y1={i * 100}
-            x2={MAP_WIDTH}
-            y2={i * 100}
-            stroke="#e5e7eb"
-            strokeWidth="1"
-          />
-        ))}
-        {Array.from({ length: 9 }).map((_, i) => (
-          <line
-            key={`vertical-${i}`}
-            x1={i * 100}
-            y1="0"
-            x2={i * 100}
-            y2={MAP_HEIGHT}
-            stroke="#e5e7eb"
-            strokeWidth="1"
-          />
-        ))}
-
-        {/* Location markers */}
-        {locations.map((location, index) => {
-          const { x, y } = latLngToPoint(location.coordinates.lat, location.coordinates.lng)
-
-          return (
-            <g key={index} transform={`translate(${x}, ${y})`} className="cursor-pointer">
-              <circle r="8" fill={index === locations.length - 1 ? "#3b82f6" : "#9ca3af"} />
-              <circle r="4" fill="white" />
-
-              {/* Location label */}
-              <text
-                x="0"
-                y="-12"
-                textAnchor="middle"
-                fill="#374151"
-                fontSize="10"
-                fontWeight={index === locations.length - 1 ? "bold" : "normal"}
-              >
-                {location.location || "Location"}
-              </text>
-            </g>
-          )
-        })}
-
-        {/* Connection lines between points */}
-        {locations.length > 1 && (
-          <g>
-            {locations.map((location, index) => {
-              if (index === 0) return null
-
-              const prevLocation = locations[index - 1]
-              const { x: x1, y: y1 } = latLngToPoint(prevLocation.coordinates.lat, prevLocation.coordinates.lng)
-              const { x: x2, y: y2 } = latLngToPoint(location.coordinates.lat, location.coordinates.lng)
-
-              return (
-                <line
-                  key={`line-${index}`}
-                  x1={x1}
-                  y1={y1}
-                  x2={x2}
-                  y2={y2}
-                  stroke="#d1d5db"
-                  strokeWidth="2"
-                  strokeDasharray="4"
-                />
-              )
-            })}
-          </g>
-        )}
-      </svg>
-
-      {/* Location details */}
-      <div className="absolute bottom-0 left-0 right-0 bg-white bg-opacity-90 p-2 text-xs border-t border-gray-200">
-        <div className="flex items-center">
-          <MapPin size={14} className="text-blue-500 mr-1" />
-          <span className="font-semibold">{locations[locations.length - 1]?.location || "Current Location"}:</span>
-          <span className="ml-1 truncate">{locations[locations.length - 1]?.address || "No address available"}</span>
-        </div>
-      </div>
-    </div>
+    <div
+      ref={mapRef}
+      className="w-full rounded-lg border overflow-hidden"
+      style={{ height }}
+      aria-label="Package location map"
+    />
   )
 }
