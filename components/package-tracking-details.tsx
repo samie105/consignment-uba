@@ -10,7 +10,21 @@ import { Package, MapPin, Clock, CheckCircle, AlertCircle } from "lucide-react"
 import PackageImageGallery from "@/components/package-image-gallery"
 import ShareTrackingDialog from "@/components/share-tracking-dialog"
 import ExportPDFButton from "@/components/export-pdf-button"
-import SimplePackageMap from "@/components/map/simple-package-map"
+import dynamic from "next/dynamic"
+
+// Dynamically import the map component to avoid SSR issues with Leaflet
+const RealPackageMap = dynamic(() => import("@/components/map/real-package-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[400px] bg-muted/20 flex items-center justify-center rounded-lg">
+      <div className="animate-pulse flex flex-col items-center">
+        <div className="h-12 w-12 rounded-full bg-primary/20 mb-4"></div>
+        <div className="h-4 w-48 bg-primary/20 rounded mb-2"></div>
+        <div className="h-3 w-32 bg-primary/30 rounded"></div>
+      </div>
+    </div>
+  ),
+})
 
 // Mock data for demonstration
 const MOCK_TRACKING_DATA = {
@@ -288,12 +302,43 @@ export default function PackageTrackingDetails({ trackingNumber }: { trackingNum
         return "bg-green-500"
       case "in_transit":
         return "bg-blue-500"
+      case "in_warehouse":
+        return "bg-purple-500"
+      case "arrived":
+        return "bg-teal-500"
+      case "customs_check":
+        return "bg-amber-500"
+      case "customs_hold":
+        return "bg-orange-500"
       case "pending":
         return "bg-yellow-500"
       case "exception":
         return "bg-red-500"
       default:
         return "bg-gray-500"
+    }
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "in_warehouse":
+        return "In Warehouse"
+      case "in_transit":
+        return "In Transit"
+      case "arrived":
+        return "Arrived"
+      case "customs_check":
+        return "Customs Check"
+      case "customs_hold":
+        return "Customs Clearance (ON HOLD)"
+      case "delivered":
+        return "Delivered"
+      case "pending":
+        return "Pending"
+      case "exception":
+        return "Exception"
+      default:
+        return status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
     }
   }
 
@@ -369,7 +414,7 @@ export default function PackageTrackingDetails({ trackingNumber }: { trackingNum
                   packageData.status,
                 )}`}
               >
-                {packageData.statusText}
+                {getStatusText(packageData.status)}
               </Badge>
             </div>
           </CardHeader>
@@ -561,7 +606,7 @@ export default function PackageTrackingDetails({ trackingNumber }: { trackingNum
                   <CardDescription>See where your package is currently located</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <SimplePackageMap packageData={packageData} checkpoints={packageData.checkpoints} height="400px" />
+                  <RealPackageMap packageData={packageData} height="400px" />
                   <div className="mt-4 p-4 bg-muted/20 rounded-lg">
                     <h3 className="font-medium mb-2">Current Location</h3>
                     <p className="text-sm text-muted-foreground">

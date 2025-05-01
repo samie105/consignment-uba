@@ -1,10 +1,46 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient as supabaseCreateClient } from "@supabase/supabase-js"
 
-// These would come from environment variables in production
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "your-supabase-url"
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "your-supabase-anon-key"
+// Get environment variables with fallbacks
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Check if credentials are available
+const hasCredentials = supabaseUrl && supabaseAnonKey
+
+// Create a function to get the client
+export const createClient = () => {
+  if (!hasCredentials) {
+    console.warn(
+      "Supabase credentials are missing. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.",
+    )
+    // Return a dummy client that will throw clear errors
+    return {
+      from: () => ({
+        select: () => Promise.reject(new Error("Supabase credentials are missing")),
+        insert: () => Promise.reject(new Error("Supabase credentials are missing")),
+        update: () => Promise.reject(new Error("Supabase credentials are missing")),
+        delete: () => Promise.reject(new Error("Supabase credentials are missing")),
+      }),
+      storage: {
+        from: () => ({
+          upload: () => Promise.reject(new Error("Supabase credentials are missing")),
+          getPublicUrl: () => ({ data: { publicUrl: "" } }),
+          remove: () => Promise.reject(new Error("Supabase credentials are missing")),
+        }),
+        listBuckets: () => Promise.reject(new Error("Supabase credentials are missing")),
+      },
+      auth: {
+        signInWithPassword: () => Promise.reject(new Error("Supabase credentials are missing")),
+        signOut: () => Promise.reject(new Error("Supabase credentials are missing")),
+      },
+    } as any
+  }
+
+  return supabaseCreateClient(supabaseUrl, supabaseAnonKey)
+}
+
+// Create a reusable client
+export const supabase = createClient()
 
 // Database schema types
 export type Package = {

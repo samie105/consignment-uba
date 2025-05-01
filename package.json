@@ -66,16 +66,15 @@
     "expo-gl": "latest",
     "react-native": "latest",
     "@react-three/fiber": "latest",
-    "leaflet": "latest",
     "framer-motion": "latest",
     "three-globe": "latest",
     "@react-three/drei": "latest",
     "js-cookie": "latest",
     "html2pdf.js": "latest",
-    "@supabase/supabase-js": "latest",
     "uuid": "latest",
-    "react-leaflet": "latest",
-    "crypto": "latest"
+    "leaflet": "latest",
+    "crypto": "latest",
+    "@supabase/supabase-js": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

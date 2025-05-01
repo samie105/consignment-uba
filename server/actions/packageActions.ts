@@ -1,90 +1,40 @@
-"use server"
+"\"use server"
 
-import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
+import { revalidatePath } from "next/cache"
 import { v4 as uuidv4 } from "uuid"
 
-export async function getAllPackages() {
-  try {
-    const { data, error } = await supabase.from("packages").select("*").order("created_at", { ascending: false })
+// Helper function to check if Supabase is configured
+const checkSupabaseConfig = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-    if (error) throw error
-
-    return {
-      success: true,
-      packages: data,
-      error: null,
-    }
-  } catch (error) {
-    console.error("Error fetching packages:", error)
+  if (!supabaseUrl || !supabaseAnonKey) {
     return {
       success: false,
-      packages: null,
-      error: "Failed to fetch packages",
+      error:
+        "Supabase credentials are missing. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.",
     }
   }
+
+  return { success: true }
 }
 
-export async function getPackageById(trackingNumber: string) {
-  try {
-    // Get package
-    const { data: packageData, error: packageError } = await supabase
-      .from("packages")
-      .select("*")
-      .eq("tracking_number", trackingNumber)
-      .single()
-
-    if (packageError) throw packageError
-
-    // Get checkpoints
-    const { data: checkpoints, error: checkpointsError } = await supabase
-      .from("checkpoints")
-      .select("*")
-      .eq("package_id", packageData.id)
-      .order("timestamp", { ascending: true })
-
-    if (checkpointsError) throw checkpointsError
-
-    // Get images
-    const { data: images, error: imagesError } = await supabase
-      .from("package_images")
-      .select("*")
-      .eq("package_id", packageData.id)
-
-    if (imagesError) throw imagesError
-
-    return {
-      success: true,
-      package: {
-        ...packageData,
-        checkpoints,
-        images: images.map((img) => img.url),
-      },
-      error: null,
-    }
-  } catch (error) {
-    console.error("Error fetching package:", error)
-    return {
-      success: false,
-      package: null,
-      error: "Failed to fetch package",
-    }
-  }
-}
-
+// Create a new package
 export async function createPackage(packageData: any) {
   try {
-    // Generate a tracking number if not provided
-    if (!packageData.trackingNumber) {
-      packageData.trackingNumber = generateTrackingNumber()
+    // Check if Supabase is configured
+    const configCheck = checkSupabaseConfig()
+    if (!configCheck.success) {
+      return configCheck
     }
 
-    const packageId = uuidv4()
+    // Generate a tracking number
+    const trackingNumber = generateTrackingNumber()
 
-    // Prepare package data for insertion
+    // Prepare the package data
     const newPackage = {
-      id: packageId,
-      tracking_number: packageData.trackingNumber,
+      tracking_number: trackingNumber,
       status: packageData.status,
       description: packageData.description,
       weight: packageData.weight,
@@ -92,289 +42,359 @@ export async function createPackage(packageData: any) {
       sender: packageData.sender,
       recipient: packageData.recipient,
       payment: packageData.payment,
-      current_location: null,
+      images: packageData.images || [],
+      checkpoints: packageData.checkpoints || [],
       created_at: new Date().toISOString(),
     }
 
-    // Insert package
-    const { error: packageError } = await supabase.from("packages").insert(newPackage)
+    // Insert the package into the database
+    const { data, error } = await supabase.from("packages").insert([newPackage]).select()
 
-    if (packageError) throw packageError
-
-    // Insert checkpoints if any
-    if (packageData.checkpoints && packageData.checkpoints.length > 0) {
-      const checkpointsToInsert = packageData.checkpoints.map((checkpoint: any) => ({
-        id: checkpoint.id || uuidv4(),
-        package_id: packageId,
-        location: checkpoint.location,
-        description: checkpoint.description,
-        timestamp: checkpoint.timestamp,
-        status: checkpoint.status,
-        coordinates: checkpoint.coordinates || null,
-      }))
-
-      const { error: checkpointsError } = await supabase.from("checkpoints").insert(checkpointsToInsert)
-
-      if (checkpointsError) throw checkpointsError
+    if (error) {
+      console.error("Error creating package:", error)
+      return { success: false, error: error.message }
     }
 
-    // Insert images if any
-    if (packageData.images && packageData.images.length > 0) {
-      const imagesToInsert = packageData.images.map((url: string) => ({
-        id: uuidv4(),
-        package_id: packageId,
-        url,
-        created_at: new Date().toISOString(),
-      }))
-
-      const { error: imagesError } = await supabase.from("package_images").insert(imagesToInsert)
-
-      if (imagesError) throw imagesError
-    }
-
-    revalidatePath("/admin/dashboard")
+    // Revalidate the packages page
     revalidatePath("/admin/packages")
 
-    return {
-      success: true,
-      trackingNumber: packageData.trackingNumber,
-    }
-  } catch (error) {
+    return { success: true, trackingNumber }
+  } catch (error: any) {
     console.error("Error creating package:", error)
-    return {
-      success: false,
-      error: "Failed to create package",
-    }
+    return { success: false, error: error.message }
   }
 }
 
+// Generate a tracking number
+function generateTrackingNumber() {
+  // Generate a random string of 12 characters
+  const randomPart = uuidv4().replace(/-/g, "").substring(0, 8).toUpperCase()
+
+  // Add a prefix
+  return `DU${randomPart}`
+}
+
+// Get all packages
+export async function getAllPackages() {
+  try {
+    // Check if Supabase is configured
+    const configCheck = checkSupabaseConfig()
+    if (!configCheck.success) {
+      return { success: false, error: configCheck.error }
+    }
+
+    const { data, error } = await supabase.from("packages").select("*").order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("Error fetching packages:", error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, packages: data, error: null }
+  } catch (error: any) {
+    console.error("Error fetching packages:", error)
+    return { success: false, error: error.message, packages: null }
+  }
+}
+
+// Get a package by ID
+export async function getPackageById(id: string) {
+  try {
+    // Check if Supabase is configured
+    const configCheck = checkSupabaseConfig()
+    if (!configCheck.success) {
+      return { success: false, error: configCheck.error }
+    }
+
+    const { data, error } = await supabase.from("packages").select("*").eq("tracking_number", id).single()
+
+    if (error) {
+      console.error("Error fetching package:", error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, package: data }
+  } catch (error: any) {
+    console.error("Error fetching package:", error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Update a package
 export async function updatePackage(trackingNumber: string, packageData: any) {
   try {
-    // Get package ID
-    const { data: existingPackage, error: fetchError } = await supabase
-      .from("packages")
-      .select("id")
-      .eq("tracking_number", trackingNumber)
-      .single()
-
-    if (fetchError) throw fetchError
-
-    // Update package
-    const { error: updateError } = await supabase
-      .from("packages")
-      .update({
-        status: packageData.status,
-        description: packageData.description,
-        weight: packageData.weight,
-        dimensions: packageData.dimensions,
-        sender: packageData.sender,
-        recipient: packageData.recipient,
-        payment: packageData.payment,
-        current_location: packageData.current_location || null,
-      })
-      .eq("id", existingPackage.id)
-
-    if (updateError) throw updateError
-
-    // Update images if provided
-    if (packageData.images) {
-      // Delete existing images
-      const { error: deleteImagesError } = await supabase
-        .from("package_images")
-        .delete()
-        .eq("package_id", existingPackage.id)
-
-      if (deleteImagesError) throw deleteImagesError
-
-      // Insert new images
-      if (packageData.images.length > 0) {
-        const imagesToInsert = packageData.images.map((url: string) => ({
-          id: uuidv4(),
-          package_id: existingPackage.id,
-          url,
-          created_at: new Date().toISOString(),
-        }))
-
-        const { error: insertImagesError } = await supabase.from("package_images").insert(imagesToInsert)
-
-        if (insertImagesError) throw insertImagesError
-      }
+    // Check if Supabase is configured
+    const configCheck = checkSupabaseConfig()
+    if (!configCheck.success) {
+      return configCheck
     }
 
-    revalidatePath("/admin/dashboard")
-    revalidatePath("/admin/packages")
+    // Prepare the package data
+    const updatedPackage = {
+      status: packageData.status,
+      description: packageData.description,
+      weight: packageData.weight,
+      dimensions: packageData.dimensions,
+      sender: packageData.sender,
+      recipient: packageData.recipient,
+      payment: packageData.payment,
+      images: packageData.images || [],
+    }
+
+    // Update the package in the database
+    const { error } = await supabase.from("packages").update(updatedPackage).eq("tracking_number", trackingNumber)
+
+    if (error) {
+      console.error("Error updating package:", error)
+      return { success: false, error: error.message }
+    }
+
+    // Revalidate the package page
     revalidatePath(`/admin/packages/${trackingNumber}`)
+    revalidatePath("/admin/packages")
 
-    return {
-      success: true,
-      error: null,
-    }
-  } catch (error) {
+    return { success: true }
+  } catch (error: any) {
     console.error("Error updating package:", error)
-    return {
-      success: false,
-      error: "Failed to update package",
-    }
+    return { success: false, error: error.message }
   }
 }
 
+// Delete a package
 export async function deletePackage(trackingNumber: string) {
   try {
-    // Get package ID
-    const { data: packageData, error: fetchError } = await supabase
-      .from("packages")
-      .select("id")
-      .eq("tracking_number", trackingNumber)
-      .single()
+    // Check if Supabase is configured
+    const configCheck = checkSupabaseConfig()
+    if (!configCheck.success) {
+      return configCheck
+    }
 
-    if (fetchError) throw fetchError
+    // Delete the package from the database
+    const { error } = await supabase.from("packages").delete().eq("tracking_number", trackingNumber)
 
-    // Delete checkpoints
-    const { error: checkpointsError } = await supabase.from("checkpoints").delete().eq("package_id", packageData.id)
+    if (error) {
+      console.error("Error deleting package:", error)
+      return { success: false, error: error.message }
+    }
 
-    if (checkpointsError) throw checkpointsError
-
-    // Delete images
-    const { error: imagesError } = await supabase.from("package_images").delete().eq("package_id", packageData.id)
-
-    if (imagesError) throw imagesError
-
-    // Delete package
-    const { error: packageError } = await supabase.from("packages").delete().eq("id", packageData.id)
-
-    if (packageError) throw packageError
-
-    revalidatePath("/admin/dashboard")
+    // Revalidate the packages page
     revalidatePath("/admin/packages")
 
-    return {
-      success: true,
-      error: null,
-    }
-  } catch (error) {
+    return { success: true }
+  } catch (error: any) {
     console.error("Error deleting package:", error)
-    return {
-      success: false,
-      error: "Failed to delete package",
-    }
+    return { success: false, error: error.message }
   }
 }
 
-export async function addCheckpoint(trackingNumber: string, checkpoint: any) {
+// Add a checkpoint to a package
+export async function addCheckpoint(trackingNumber: string, checkpointData: any) {
   try {
-    // Get package ID
-    const { data: packageData, error: fetchError } = await supabase
+    // Check if Supabase is configured
+    const configCheck = checkSupabaseConfig()
+    if (!configCheck.success) {
+      return configCheck
+    }
+
+    // Get the current package
+    const { data: packageData, error: packageError } = await supabase
       .from("packages")
-      .select("id")
+      .select("checkpoints")
       .eq("tracking_number", trackingNumber)
       .single()
 
-    if (fetchError) throw fetchError
+    if (packageError) {
+      console.error("Error fetching package:", packageError)
+      return { success: false, error: packageError.message }
+    }
 
-    // Add checkpoint
+    // Prepare the checkpoint data
     const newCheckpoint = {
-      id: checkpoint.id || uuidv4(),
-      package_id: packageData.id,
-      location: checkpoint.location,
-      description: checkpoint.description,
-      timestamp: checkpoint.timestamp || new Date().toISOString(),
-      status: checkpoint.status,
-      coordinates: checkpoint.coordinates || null,
+      id: checkpointData.id || uuidv4(),
+      location: checkpointData.location,
+      description: checkpointData.description,
+      timestamp: checkpointData.timestamp || new Date().toISOString(),
+      status: checkpointData.status,
+      coordinates: checkpointData.coordinates || null,
     }
 
-    const { error: checkpointError } = await supabase.from("checkpoints").insert(newCheckpoint)
+    // Add the checkpoint to the package
+    const checkpoints = [...(packageData.checkpoints || []), newCheckpoint]
 
-    if (checkpointError) throw checkpointError
-
-    // Update package current location if coordinates are provided
-    if (checkpoint.coordinates) {
-      const { error: updateError } = await supabase
-        .from("packages")
-        .update({
-          current_location: {
-            lat: checkpoint.coordinates.lat,
-            lng: checkpoint.coordinates.lng,
-            address: checkpoint.location,
-          },
-          status: checkpoint.status,
-        })
-        .eq("id", packageData.id)
-
-      if (updateError) throw updateError
-    }
-
-    revalidatePath("/admin/dashboard")
-    revalidatePath("/admin/packages")
-    revalidatePath(`/admin/packages/${trackingNumber}`)
-
-    return {
-      success: true,
-      error: null,
-    }
-  } catch (error) {
-    console.error("Error adding checkpoint:", error)
-    return {
-      success: false,
-      error: "Failed to add checkpoint",
-    }
-  }
-}
-
-export async function deleteCheckpoint(trackingNumber: string, checkpointId: string) {
-  try {
-    // Delete checkpoint
-    const { error } = await supabase.from("checkpoints").delete().eq("id", checkpointId)
-
-    if (error) throw error
-
-    revalidatePath("/admin/dashboard")
-    revalidatePath("/admin/packages")
-    revalidatePath(`/admin/packages/${trackingNumber}`)
-
-    return {
-      success: true,
-      error: null,
-    }
-  } catch (error) {
-    console.error("Error deleting checkpoint:", error)
-    return {
-      success: false,
-      error: "Failed to delete checkpoint",
-    }
-  }
-}
-
-export async function updatePackageLocation(trackingNumber: string, location: any) {
-  try {
-    // Update package location
+    // Update the package in the database
     const { error } = await supabase
       .from("packages")
-      .update({
-        current_location: location,
-      })
+      .update({ checkpoints, status: checkpointData.status })
       .eq("tracking_number", trackingNumber)
 
-    if (error) throw error
+    if (error) {
+      console.error("Error adding checkpoint:", error)
+      return { success: false, error: error.message }
+    }
 
-    revalidatePath("/admin/dashboard")
-    revalidatePath("/admin/packages")
+    // Revalidate the package page
     revalidatePath(`/admin/packages/${trackingNumber}`)
+    revalidatePath("/admin/packages")
 
-    return {
-      success: true,
-      error: null,
-    }
-  } catch (error) {
-    console.error("Error updating package location:", error)
-    return {
-      success: false,
-      error: "Failed to update package location",
-    }
+    return { success: true, checkpoint: newCheckpoint }
+  } catch (error: any) {
+    console.error("Error adding checkpoint:", error)
+    return { success: false, error: error.message }
   }
 }
 
-function generateTrackingNumber() {
-  return `DU${Math.floor(Math.random() * 1000000000)
-    .toString()
-    .padStart(9, "0")}`
+// Update a checkpoint
+export async function updateCheckpoint(trackingNumber: string, checkpointId: string, checkpointData: any) {
+  try {
+    // Check if Supabase is configured
+    const configCheck = checkSupabaseConfig()
+    if (!configCheck.success) {
+      return configCheck
+    }
+
+    // Get the current package
+    const { data: packageData, error: packageError } = await supabase
+      .from("packages")
+      .select("checkpoints")
+      .eq("tracking_number", trackingNumber)
+      .single()
+
+    if (packageError) {
+      console.error("Error fetching package:", packageError)
+      return { success: false, error: packageError.message }
+    }
+
+    // Find the checkpoint to update
+    const checkpoints = packageData.checkpoints || []
+    const checkpointIndex = checkpoints.findIndex((checkpoint: any) => checkpoint.id === checkpointId)
+
+    if (checkpointIndex === -1) {
+      return { success: false, error: "Checkpoint not found" }
+    }
+
+    // Update the checkpoint
+    checkpoints[checkpointIndex] = {
+      ...checkpoints[checkpointIndex],
+      ...checkpointData,
+    }
+
+    // Update the package in the database
+    const { error } = await supabase.from("packages").update({ checkpoints }).eq("tracking_number", trackingNumber)
+
+    if (error) {
+      console.error("Error updating checkpoint:", error)
+      return { success: false, error: error.message }
+    }
+
+    // Revalidate the package page
+    revalidatePath(`/admin/packages/${trackingNumber}`)
+    revalidatePath("/admin/packages")
+
+    return { success: true }
+  } catch (error: any) {
+    console.error("Error updating checkpoint:", error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Delete a checkpoint
+export async function deleteCheckpoint(trackingNumber: string, checkpointId: string) {
+  try {
+    // Check if Supabase is configured
+    const configCheck = checkSupabaseConfig()
+    if (!configCheck.success) {
+      return configCheck
+    }
+
+    // Get the current package
+    const { data: packageData, error: packageError } = await supabase
+      .from("packages")
+      .select("checkpoints")
+      .eq("tracking_number", trackingNumber)
+      .single()
+
+    if (packageError) {
+      console.error("Error fetching package:", packageError)
+      return { success: false, error: packageError.message }
+    }
+
+    // Filter out the checkpoint to delete
+    const checkpoints = (packageData.checkpoints || []).filter((checkpoint: any) => checkpoint.id !== checkpointId)
+
+    // Update the package in the database
+    const { error } = await supabase.from("packages").update({ checkpoints }).eq("tracking_number", trackingNumber)
+
+    if (error) {
+      console.error("Error deleting checkpoint:", error)
+      return { success: false, error: error.message }
+    }
+
+    // Revalidate the package page
+    revalidatePath(`/admin/packages/${trackingNumber}`)
+    revalidatePath("/admin/packages")
+
+    return { success: true }
+  } catch (error: any) {
+    console.error("Error deleting checkpoint:", error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Update checkpoints
+export async function updateCheckpoints(trackingNumber: string, checkpoints: any[]) {
+  try {
+    // Check if Supabase is configured
+    const configCheck = checkSupabaseConfig()
+    if (!configCheck.success) {
+      return configCheck
+    }
+
+    // Update the package in the database
+    const { error } = await supabase.from("packages").update({ checkpoints }).eq("tracking_number", trackingNumber)
+
+    if (error) {
+      console.error("Error updating checkpoints:", error)
+      return { success: false, error: error.message }
+    }
+
+    // Revalidate the package page
+    revalidatePath(`/admin/packages/${trackingNumber}`)
+    revalidatePath("/admin/packages")
+
+    return { success: true }
+  } catch (error: any) {
+    console.error("Error updating checkpoints:", error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Update package location
+export async function updatePackageLocation(trackingNumber: string, location: any) {
+  try {
+    // Check if Supabase is configured
+    const configCheck = checkSupabaseConfig()
+    if (!configCheck.success) {
+      return configCheck
+    }
+
+    // Update the package in the database
+    const { error } = await supabase
+      .from("packages")
+      .update({ current_location: location })
+      .eq("tracking_number", trackingNumber)
+
+    if (error) {
+      console.error("Error updating package location:", error)
+      return { success: false, error: error.message }
+    }
+
+    // Revalidate the package page
+    revalidatePath(`/admin/packages/${trackingNumber}`)
+    revalidatePath("/admin/packages")
+
+    return { success: true }
+  } catch (error: any) {
+    console.error("Error updating package location:", error)
+    return { success: false, error: error.message }
+  }
 }

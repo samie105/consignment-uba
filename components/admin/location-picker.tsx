@@ -1,184 +1,214 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect, useRef } from "react"
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet"
-import "leaflet/dist/leaflet.css"
-import L from "leaflet"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { updatePackageLocation } from "@/server/actions/packageActions"
-
-// Fix Leaflet marker icon issue in Next.js
-const icon = L.icon({
-  iconUrl: "/images/marker-icon.png",
-  shadowUrl: "/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-})
-
-// Component to handle map clicks
-function LocationMarker({
-  position,
-  setPosition,
-}: {
-  position: [number, number] | null
-  setPosition: (pos: [number, number]) => void
-}) {
-  const map = useMapEvents({
-    click(e) {
-      setPosition([e.latlng.lat, e.latlng.lng])
-    },
-  })
-
-  return position ? <Marker position={position} icon={icon} /> : null
-}
+import L from "leaflet"
+import "leaflet/dist/leaflet.css"
+import { Save } from "lucide-react"
 
 interface LocationPickerProps {
   trackingNumber: string
   initialLocation?: {
-    lat: number
-    lng: number
+    latitude: number
+    longitude: number
     address: string
-  } | null
-  onLocationUpdated?: () => void
+  }
 }
 
-export default function LocationPicker({
-  trackingNumber,
-  initialLocation = null,
-  onLocationUpdated,
-}: LocationPickerProps) {
-  const [position, setPosition] = useState<[number, number] | null>(
-    initialLocation ? [initialLocation.lat, initialLocation.lng] : null,
-  )
-  const [address, setAddress] = useState(initialLocation?.address || "")
-  const [isUpdating, setIsUpdating] = useState(false)
-  const mapRef = useRef<L.Map | null>(null)
+export default function LocationPicker({ trackingNumber, initialLocation }: LocationPickerProps) {
+  const [location, setLocation] = useState({
+    latitude: initialLocation?.latitude || 40.7128,
+    longitude: initialLocation?.longitude || -74.006,
+    address: initialLocation?.address || "New York, NY",
+  })
+  const [isSaving, setIsSaving] = useState(false)
+  const mapRef = useRef<HTMLDivElement>(null)
+  const leafletMapRef = useRef<L.Map | null>(null)
+  const markerRef = useRef<L.Marker | null>(null)
 
-  // Fix for Leaflet marker icon in Next.js
   useEffect(() => {
-    // Import Leaflet CSS
-    import("leaflet/dist/leaflet.css")
-
-    // Delete the default icon
-    delete L.Icon.Default.prototype._getIconUrl
-
-    // Set up the default icon
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl: "/images/marker-icon-2x.png",
-      iconUrl: "/images/marker-icon.png",
-      shadowUrl: "/images/marker-shadow.png",
-    })
-  }, [])
-
-  // Function to handle location update
-  const handleUpdateLocation = async () => {
-    if (!position) {
-      toast.error("Please select a location on the map")
-      return
+    // Fix Leaflet icon issues
+    if (typeof window !== "undefined") {
+      delete (L.Icon.Default.prototype as any)._getIconUrl
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
+        iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+        shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+      })
     }
 
-    if (!address.trim()) {
-      toast.error("Please enter an address")
-      return
-    }
+    // Initialize map if it doesn't exist
+    if (mapRef.current && !leafletMapRef.current) {
+      leafletMapRef.current = L.map(mapRef.current).setView([location.latitude, location.longitude], 10)
 
-    setIsUpdating(true)
+      // Add OpenStreetMap tile layer
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      }).addTo(leafletMapRef.current)
 
-    try {
-      const result = await updatePackageLocation(trackingNumber, {
-        lat: position[0],
-        lng: position[1],
-        address: address,
+      // Add marker for current location
+      markerRef.current = L.marker([location.latitude, location.longitude], {
+        draggable: true,
+      }).addTo(leafletMapRef.current)
+
+      // Update location when marker is dragged
+      markerRef.current.on("dragend", (e) => {
+        const marker = e.target
+        const position = marker.getLatLng()
+        setLocation((prev) => ({
+          ...prev,
+          latitude: position.lat,
+          longitude: position.lng,
+        }))
+        reverseGeocode(position.lat, position.lng)
       })
 
-      if (result.success) {
-        toast.success("Package location updated")
-        if (onLocationUpdated) {
-          onLocationUpdated()
+      // Update location when map is clicked
+      leafletMapRef.current.on("click", (e) => {
+        const position = e.latlng
+        if (markerRef.current) {
+          markerRef.current.setLatLng(position)
         }
-      } else {
-        toast.error(result.error || "Failed to update location")
+        setLocation((prev) => ({
+          ...prev,
+          latitude: position.lat,
+          longitude: position.lng,
+        }))
+        reverseGeocode(position.lat, position.lng)
+      })
+    }
+
+    // Cleanup function
+    return () => {
+      if (leafletMapRef.current && typeof window !== "undefined") {
+        leafletMapRef.current.remove()
+        leafletMapRef.current = null
+        markerRef.current = null
       }
-    } catch (error) {
-      toast.error("An error occurred while updating the location")
-      console.error(error)
-    } finally {
-      setIsUpdating(false)
     }
-  }
+  }, [])
 
-  // Function to search for an address using Nominatim (OpenStreetMap)
-  const searchAddress = async () => {
-    if (!address.trim()) {
-      toast.error("Please enter an address to search")
-      return
+  // Update marker position if location changes
+  useEffect(() => {
+    if (markerRef.current && leafletMapRef.current) {
+      markerRef.current.setLatLng([location.latitude, location.longitude])
+      leafletMapRef.current.setView([location.latitude, location.longitude], leafletMapRef.current.getZoom())
     }
+  }, [location.latitude, location.longitude])
 
+  // Simple reverse geocoding using Nominatim
+  const reverseGeocode = async (lat: number, lng: number) => {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`,
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
       )
       const data = await response.json()
 
-      if (data && data.length > 0) {
-        const location = data[0]
-        const newPosition: [number, number] = [Number.parseFloat(location.lat), Number.parseFloat(location.lon)]
-        setPosition(newPosition)
-
-        // Center the map on the new position
-        if (mapRef.current) {
-          mapRef.current.setView(newPosition, 13)
-        }
-      } else {
-        toast.error("Address not found")
+      if (data && data.display_name) {
+        setLocation((prev) => ({
+          ...prev,
+          address: data.display_name,
+        }))
       }
     } catch (error) {
-      toast.error("Error searching for address")
-      console.error(error)
+      console.error("Error reverse geocoding:", error)
+      // If geocoding fails, just use coordinates as address
+      setLocation((prev) => ({
+        ...prev,
+        address: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`,
+      }))
+    }
+  }
+
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocation((prev) => ({
+      ...prev,
+      address: e.target.value,
+    }))
+  }
+
+  const handleSaveLocation = async () => {
+    setIsSaving(true)
+    try {
+      const result = await updatePackageLocation(trackingNumber, location)
+
+      if (result.success) {
+        toast.success("Location updated", {
+          description: "The package location has been updated successfully.",
+        })
+      } else {
+        toast.error("Error", {
+          description: result.error || "Failed to update location. Please try again.",
+        })
+      }
+    } catch (error) {
+      toast.error("Error", {
+        description: "An unexpected error occurred. Please try again.",
+      })
+    } finally {
+      setIsSaving(false)
     }
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-2">
-        <Input
-          placeholder="Enter location address"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          className="flex-grow"
-        />
-        <Button onClick={searchAddress} variant="outline" type="button">
-          Search
-        </Button>
-      </div>
+      <div
+        ref={mapRef}
+        className="w-full h-[300px] rounded-lg border overflow-hidden"
+        aria-label="Location picker map"
+      />
 
-      <div className="h-[400px] rounded-lg overflow-hidden border">
-        <MapContainer
-          center={position || [0, 0]}
-          zoom={position ? 13 : 2}
-          style={{ height: "100%", width: "100%" }}
-          ref={mapRef}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label htmlFor="latitude" className="block text-sm font-medium mb-1">
+            Latitude
+          </label>
+          <Input
+            id="latitude"
+            type="number"
+            step="0.000001"
+            value={location.latitude}
+            onChange={(e) => setLocation((prev) => ({ ...prev, latitude: Number.parseFloat(e.target.value) }))}
           />
-          <LocationMarker position={position} setPosition={setPosition} />
-        </MapContainer>
+        </div>
+
+        <div>
+          <label htmlFor="longitude" className="block text-sm font-medium mb-1">
+            Longitude
+          </label>
+          <Input
+            id="longitude"
+            type="number"
+            step="0.000001"
+            value={location.longitude}
+            onChange={(e) => setLocation((prev) => ({ ...prev, longitude: Number.parseFloat(e.target.value) }))}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="address" className="block text-sm font-medium mb-1">
+            Address
+          </label>
+          <Input id="address" value={location.address} onChange={handleAddressChange} />
+        </div>
       </div>
 
-      <div className="flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">
-          {position
-            ? `Selected: ${position[0].toFixed(6)}, ${position[1].toFixed(6)}`
-            : "Click on the map to select a location"}
-        </p>
-        <Button onClick={handleUpdateLocation} disabled={!position || !address.trim() || isUpdating}>
-          {isUpdating ? "Updating..." : "Update Location"}
+      <div className="flex justify-end">
+        <Button onClick={handleSaveLocation} disabled={isSaving}>
+          {isSaving ? (
+            <>Saving...</>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Save Location
+            </>
+          )}
         </Button>
       </div>
     </div>

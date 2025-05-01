@@ -11,24 +11,42 @@ export const initStorage = async () => {
     const { data: buckets, error } = await supabase.storage.listBuckets()
 
     if (error) {
+      if (error.message.includes("credentials")) {
+        console.error(
+          "Supabase credentials are missing. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.",
+        )
+        return { success: false, error: "Supabase credentials are missing" }
+      }
+
       console.error("Error listing buckets:", error)
-      // Continue anyway - we'll handle missing bucket errors during upload
-      return
+      return { success: false, error: error.message }
     }
 
     // Log a message if the bucket doesn't exist
     if (!buckets?.find((bucket) => bucket.name === BUCKET_NAME)) {
       console.warn(`Bucket "${BUCKET_NAME}" does not exist. Please create it in the Supabase dashboard.`)
+      return {
+        success: false,
+        error: `Bucket "${BUCKET_NAME}" does not exist. Please create it in the Supabase dashboard.`,
+      }
     }
-  } catch (error) {
+
+    return { success: true }
+  } catch (error: any) {
     console.error("Error checking storage bucket:", error)
-    // Continue anyway - we'll handle errors during upload
+    return { success: false, error: error.message || "Unknown error" }
   }
 }
 
 // Upload a file to Supabase Storage
 export const uploadFile = async (file: File): Promise<string> => {
   try {
+    // Check if Supabase is properly configured
+    const storageStatus = await initStorage()
+    if (!storageStatus.success) {
+      throw new Error(storageStatus.error || "Storage not initialized")
+    }
+
     // Generate a unique file name
     const fileExt = file.name.split(".").pop()
     const fileName = `${uuidv4()}.${fileExt}`
@@ -48,8 +66,16 @@ export const uploadFile = async (file: File): Promise<string> => {
     const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath)
 
     return urlData.publicUrl
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error uploading file:", error)
+
+    // Provide a more user-friendly error message
+    if (error.message.includes("credentials")) {
+      throw new Error("Supabase credentials are missing. Please check your environment variables.")
+    } else if (error.message.includes("bucket")) {
+      throw new Error(`The storage bucket "${BUCKET_NAME}" doesn't exist. Please create it in your Supabase dashboard.`)
+    }
+
     throw error
   }
 }
@@ -57,6 +83,12 @@ export const uploadFile = async (file: File): Promise<string> => {
 // Delete a file from Supabase Storage
 export const deleteFile = async (url: string): Promise<void> => {
   try {
+    // Check if Supabase is properly configured
+    const storageStatus = await initStorage()
+    if (!storageStatus.success) {
+      throw new Error(storageStatus.error || "Storage not initialized")
+    }
+
     // Extract the file path from the URL
     const urlObj = new URL(url)
     const pathParts = urlObj.pathname.split("/")
@@ -68,8 +100,16 @@ export const deleteFile = async (url: string): Promise<void> => {
     if (error) {
       throw error
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error deleting file:", error)
+
+    // Provide a more user-friendly error message
+    if (error.message.includes("credentials")) {
+      throw new Error("Supabase credentials are missing. Please check your environment variables.")
+    } else if (error.message.includes("bucket")) {
+      throw new Error(`The storage bucket "${BUCKET_NAME}" doesn't exist. Please create it in your Supabase dashboard.`)
+    }
+
     throw error
   }
 }

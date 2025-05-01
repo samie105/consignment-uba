@@ -1,4 +1,3 @@
-"use client"
 import { getPackageById } from "@/server/actions/packageActions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,18 +8,34 @@ import { Badge } from "@/components/ui/badge"
 import { PackageImageGallery } from "@/components/package-image-gallery"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import dynamic from "next/dynamic"
+import DeletePackageButton from "@/components/admin/delete-package-button"
 
 // Dynamically import the location picker to avoid SSR issues with Leaflet
 const LocationPicker = dynamic(() => import("@/components/admin/location-picker"), { ssr: false })
 
-// Import the simple map component
-const SimplePackageMap = dynamic(() => import("@/components/map/simple-package-map"), { ssr: false })
+// Import the real map component
+const RealPackageMap = dynamic(() => import("@/components/map/real-package-map"), { ssr: false })
 
 const statusColors = {
   pending: "bg-yellow-500",
+  in_warehouse: "bg-purple-500",
   in_transit: "bg-blue-500",
+  arrived: "bg-teal-500",
+  customs_check: "bg-amber-500",
+  customs_hold: "bg-orange-500",
   delivered: "bg-green-500",
   exception: "bg-red-500",
+}
+
+const statusText = {
+  pending: "Pending",
+  in_warehouse: "In Warehouse",
+  in_transit: "In Transit",
+  arrived: "Arrived",
+  customs_check: "Customs Check",
+  customs_hold: "Customs Clearance (ON HOLD)",
+  delivered: "Delivered",
+  exception: "Exception",
 }
 
 export default async function PackageDetailsPage({ params }: { params: { id: string } }) {
@@ -44,6 +59,10 @@ export default async function PackageDetailsPage({ params }: { params: { id: str
 
   const getStatusColor = (status: string) => {
     return statusColors[status as keyof typeof statusColors] || "bg-gray-500"
+  }
+
+  const getStatusDisplay = (status: string) => {
+    return statusText[status as keyof typeof statusText] || status.replace("_", " ").toUpperCase()
   }
 
   const timelineItems = packageData.checkpoints.map((checkpoint: any) => ({
@@ -77,6 +96,7 @@ export default async function PackageDetailsPage({ params }: { params: { id: str
               Edit
             </Link>
           </Button>
+          <DeletePackageButton trackingNumber={packageData.trackingNumber} />
         </div>
       </div>
 
@@ -85,9 +105,7 @@ export default async function PackageDetailsPage({ params }: { params: { id: str
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
               <CardTitle>Package Information</CardTitle>
-              <Badge className={getStatusColor(packageData.status)}>
-                {packageData.status.replace("_", " ").toUpperCase()}
-              </Badge>
+              <Badge className={getStatusColor(packageData.status)}>{getStatusDisplay(packageData.status)}</Badge>
             </div>
             <CardDescription>Tracking Number: {packageData.trackingNumber}</CardDescription>
           </CardHeader>
@@ -170,9 +188,15 @@ export default async function PackageDetailsPage({ params }: { params: { id: str
                 {/* Current location map */}
                 <div className="space-y-2">
                   <h3 className="text-lg font-medium">Current Location</h3>
-                  <SimplePackageMap
-                    currentLocation={packageData.current_location}
+                  <RealPackageMap
+                    packageData={{
+                      trackingNumber: packageData.trackingNumber,
+                      status: packageData.status,
+                      statusText: getStatusDisplay(packageData.status),
+                      current_location: packageData.current_location,
+                    }}
                     checkpoints={packageData.checkpoints}
+                    showCheckpoints={true}
                   />
                 </div>
 

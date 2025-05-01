@@ -2,12 +2,13 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Upload, X, ImageIcon, Loader2 } from "lucide-react"
+import { Upload, X, ImageIcon, Loader2, AlertCircle } from "lucide-react"
 import Image from "next/image"
 import { toast } from "sonner"
-import { uploadFile, deleteFile } from "@/lib/supabase-storage"
+import { uploadFile, deleteFile, initStorage } from "@/lib/supabase-storage"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface FileUploadProps {
   onUpload: (files: string[]) => void
@@ -27,7 +28,24 @@ export function FileUpload({ onUpload, initialFiles = [], maxFiles = 5, accept =
   const filteredInitialFiles = initialFiles.filter((file) => file && file.trim() !== "")
   const [files, setFiles] = useState<string[]>(filteredInitialFiles)
   const [uploading, setUploading] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Check storage on component mount
+  useEffect(() => {
+    const checkStorage = async () => {
+      try {
+        const result = await initStorage()
+        if (!result.success) {
+          setError(result.error || "Failed to initialize storage")
+        }
+      } catch (err: any) {
+        setError(err.message || "Failed to initialize storage")
+      }
+    }
+
+    checkStorage()
+  }, [])
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files
@@ -39,6 +57,7 @@ export function FileUpload({ onUpload, initialFiles = [], maxFiles = 5, accept =
     }
 
     setUploading(true)
+    setError(null)
 
     try {
       const uploadPromises = Array.from(selectedFiles).map(async (file) => {
@@ -46,9 +65,10 @@ export function FileUpload({ onUpload, initialFiles = [], maxFiles = 5, accept =
           const url = await uploadFile(file)
           toast.success(`Uploaded ${file.name}`)
           return url
-        } catch (error) {
-          toast.error(`Failed to upload ${file.name}`)
+        } catch (error: any) {
+          toast.error(`Failed to upload ${file.name}: ${error.message}`)
           console.error("Upload error:", error)
+          setError(error.message)
           return null
         }
       })
@@ -58,9 +78,10 @@ export function FileUpload({ onUpload, initialFiles = [], maxFiles = 5, accept =
 
       setFiles(updatedFiles)
       onUpload(updatedFiles)
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upload error:", error)
-      toast.error("An error occurred during upload")
+      toast.error(`An error occurred during upload: ${error.message}`)
+      setError(error.message)
     } finally {
       setUploading(false)
       // Reset the file input
@@ -86,14 +107,33 @@ export function FileUpload({ onUpload, initialFiles = [], maxFiles = 5, accept =
       onUpload(updatedFiles)
 
       toast.success("File removed")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Remove file error:", error)
-      toast.error("Failed to remove file")
+      toast.error(`Failed to remove file: ${error.message}`)
+      setError(error.message)
     }
   }
 
   return (
     <div className="space-y-4">
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {error}
+            {error.includes("credentials") && (
+              <p className="mt-2">
+                Please set the NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.
+              </p>
+            )}
+            {error.includes("bucket") && (
+              <p className="mt-2">Please create a bucket named "package-images" in your Supabase dashboard.</p>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {files.map((file, index) => (
           <div key={index} className="relative aspect-square rounded-md border bg-muted">
@@ -120,7 +160,7 @@ export function FileUpload({ onUpload, initialFiles = [], maxFiles = 5, accept =
           </div>
         ))}
 
-        {files.length < maxFiles && !uploading && (
+        {files.length < maxFiles && !uploading && !error && (
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -146,7 +186,7 @@ export function FileUpload({ onUpload, initialFiles = [], maxFiles = 5, accept =
         accept={accept}
         className="hidden"
         multiple={files.length < maxFiles}
-        disabled={uploading}
+        disabled={uploading || !!error}
       />
 
       <Button
@@ -155,7 +195,7 @@ export function FileUpload({ onUpload, initialFiles = [], maxFiles = 5, accept =
         size="sm"
         className="mt-2"
         onClick={() => fileInputRef.current?.click()}
-        disabled={files.length >= maxFiles || uploading}
+        disabled={files.length >= maxFiles || uploading || !!error}
       >
         {uploading ? (
           <>
