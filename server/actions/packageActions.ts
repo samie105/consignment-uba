@@ -1,6 +1,6 @@
-"\"use server"
+"use server"
 
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase"
 import { revalidatePath } from "next/cache"
 import { v4 as uuidv4 } from "uuid"
 
@@ -20,59 +20,81 @@ const checkSupabaseConfig = () => {
   return { success: true }
 }
 
+// Helper function to generate a random tracking number
+function generateTrackingNumber() {
+  return `DU${Math.floor(Math.random() * 10000000000)
+    .toString()
+    .padStart(10, "0")}`
+}
+
 // Create a new package
-export async function createPackage(packageData: any) {
+export async function createPackage(data: any) {
   try {
-    // Check if Supabase is configured
-    const configCheck = checkSupabaseConfig()
-    if (!configCheck.success) {
-      return configCheck
-    }
+    const supabase = createClient()
 
     // Generate a tracking number
     const trackingNumber = generateTrackingNumber()
 
-    // Prepare the package data
-    const newPackage = {
-      tracking_number: trackingNumber,
-      status: packageData.status,
-      description: packageData.description,
-      weight: packageData.weight,
-      dimensions: packageData.dimensions,
-      sender: packageData.sender,
-      recipient: packageData.recipient,
-      payment: packageData.payment,
-      images: packageData.images || [],
-      checkpoints: packageData.checkpoints || [],
-      created_at: new Date().toISOString(),
+    // Add current location if not provided
+    if (!data.current_location) {
+      data.current_location = {
+        latitude: 40.7128,
+        longitude: -74.006,
+        address: "New York, NY",
+      }
     }
 
     // Insert the package into the database
-    const { data, error } = await supabase.from("packages").insert([newPackage]).select()
+    const { data: packageData, error } = await supabase
+      .from("packages")
+      .insert({
+        tracking_number: trackingNumber,
+        status: data.status,
+        description: data.description,
+        weight: data.weight,
+        dimensions: data.dimensions,
+        sender: data.sender,
+        recipient: data.recipient,
+        payment: data.payment,
+        images: data.images || [],
+        checkpoints: data.checkpoints || [],
+        current_location: data.current_location,
+      })
+      .select()
+      .single()
 
     if (error) {
       console.error("Error creating package:", error)
       return { success: false, error: error.message }
     }
 
-    // Revalidate the packages page
-    revalidatePath("/admin/packages")
+    // Use revalidatePath only in app directory components
+    try {
+      revalidatePath("/admin/packages")
+    } catch (e) {
+      // Silently catch errors if revalidatePath is not supported
+      console.log("Note: revalidatePath not supported in this context")
+    }
 
-    return { success: true, trackingNumber }
+    return {
+      success: true,
+      trackingNumber,
+      package: packageData,
+    }
   } catch (error: any) {
-    console.error("Error creating package:", error)
-    return { success: false, error: error.message }
+    console.error("Unexpected error creating package:", error)
+    return { success: false, error: error.message || "An unexpected error occurred" }
   }
 }
 
 // Generate a tracking number
-function generateTrackingNumber() {
-  // Generate a random string of 12 characters
-  const randomPart = uuidv4().replace(/-/g, "").substring(0, 8).toUpperCase()
+// function generateTrackingNumber() {
+//   // Generate a random string of 12 characters
+//   const randomPart = uuidv4().replace(/-/g, "").substring(0, 8).toUpperCase()
 
-  // Add a prefix
-  return `DU${randomPart}`
-}
+//   // Add a prefix
+//   return `DU${randomPart}`
+// }
 
 // Get all packages
 export async function getAllPackages() {
@@ -83,6 +105,7 @@ export async function getAllPackages() {
       return { success: false, error: configCheck.error }
     }
 
+    const supabase = createClient()
     const { data, error } = await supabase.from("packages").select("*").order("created_at", { ascending: false })
 
     if (error) {
@@ -106,6 +129,7 @@ export async function getPackageById(id: string) {
       return { success: false, error: configCheck.error }
     }
 
+    const supabase = createClient()
     const { data, error } = await supabase.from("packages").select("*").eq("tracking_number", id).single()
 
     if (error) {
@@ -128,6 +152,8 @@ export async function updatePackage(trackingNumber: string, packageData: any) {
     if (!configCheck.success) {
       return configCheck
     }
+
+    const supabase = createClient()
 
     // Prepare the package data
     const updatedPackage = {
@@ -169,6 +195,8 @@ export async function deletePackage(trackingNumber: string) {
       return configCheck
     }
 
+    const supabase = createClient()
+
     // Delete the package from the database
     const { error } = await supabase.from("packages").delete().eq("tracking_number", trackingNumber)
 
@@ -195,6 +223,8 @@ export async function addCheckpoint(trackingNumber: string, checkpointData: any)
     if (!configCheck.success) {
       return configCheck
     }
+
+    const supabase = createClient()
 
     // Get the current package
     const { data: packageData, error: packageError } = await supabase
@@ -252,6 +282,8 @@ export async function updateCheckpoint(trackingNumber: string, checkpointId: str
       return configCheck
     }
 
+    const supabase = createClient()
+
     // Get the current package
     const { data: packageData, error: packageError } = await supabase
       .from("packages")
@@ -306,6 +338,8 @@ export async function deleteCheckpoint(trackingNumber: string, checkpointId: str
       return configCheck
     }
 
+    const supabase = createClient()
+
     // Get the current package
     const { data: packageData, error: packageError } = await supabase
       .from("packages")
@@ -349,6 +383,8 @@ export async function updateCheckpoints(trackingNumber: string, checkpoints: any
       return configCheck
     }
 
+    const supabase = createClient()
+
     // Update the package in the database
     const { error } = await supabase.from("packages").update({ checkpoints }).eq("tracking_number", trackingNumber)
 
@@ -371,16 +407,13 @@ export async function updateCheckpoints(trackingNumber: string, checkpoints: any
 // Update package location
 export async function updatePackageLocation(trackingNumber: string, location: any) {
   try {
-    // Check if Supabase is configured
-    const configCheck = checkSupabaseConfig()
-    if (!configCheck.success) {
-      return configCheck
-    }
+    const supabase = createClient()
 
-    // Update the package in the database
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("packages")
-      .update({ current_location: location })
+      .update({
+        current_location: location,
+      })
       .eq("tracking_number", trackingNumber)
 
     if (error) {
@@ -388,13 +421,18 @@ export async function updatePackageLocation(trackingNumber: string, location: an
       return { success: false, error: error.message }
     }
 
-    // Revalidate the package page
-    revalidatePath(`/admin/packages/${trackingNumber}`)
-    revalidatePath("/admin/packages")
+    // Use revalidatePath only in app directory components
+    try {
+      revalidatePath(`/admin/packages/${trackingNumber}`)
+      revalidatePath(`/track`)
+    } catch (e) {
+      // Silently catch errors if revalidatePath is not supported
+      console.log("Note: revalidatePath not supported in this context")
+    }
 
     return { success: true }
   } catch (error: any) {
-    console.error("Error updating package location:", error)
-    return { success: false, error: error.message }
+    console.error("Unexpected error updating package location:", error)
+    return { success: false, error: error.message || "An unexpected error occurred" }
   }
 }

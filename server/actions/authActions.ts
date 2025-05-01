@@ -32,7 +32,7 @@ export async function login(formData: FormData) {
       .from("admin_users")
       .select("id, email, name, role")
       .eq("email", email)
-      .eq("password", password) // In a real app, you would compare hashed passwords
+      .eq("password", hashPassword(password)) // In a real app, you would compare hashed passwords
       .single()
 
     if (error || !user) {
@@ -131,7 +131,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
     }
 
     // Verify current password
-    if (user.password !== currentPassword) {
+    if (hashPassword(currentPassword) !== user.password) {
       return {
         success: false,
         error: "Current password is incorrect",
@@ -142,7 +142,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
     const { error: updateError } = await supabase
       .from("admin_users")
       .update({
-        password: newPassword,
+        password: hashPassword(newPassword),
         updated_at: new Date().toISOString(),
       })
       .eq("id", authToken)
