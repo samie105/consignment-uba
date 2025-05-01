@@ -72,8 +72,8 @@
     "@react-three/drei": "latest",
     "js-cookie": "latest",
     "html2pdf.js": "latest",
-    "uuid": "latest",
     "@supabase/supabase-js": "latest",
+    "uuid": "latest",
     "react-leaflet": "latest",
     "crypto": "latest"
   },

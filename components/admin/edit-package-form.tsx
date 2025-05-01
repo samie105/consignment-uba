@@ -123,6 +123,7 @@ export function EditPackageForm({ packageData }: EditPackageFormProps) {
       toast.error("Error", {
         description: "An unexpected error occurred. Please try again.",
       })
+      console.error("Update error:", error)
     } finally {
       setIsSubmitting(false)
     }
@@ -170,8 +171,11 @@ export function EditPackageForm({ packageData }: EditPackageFormProps) {
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in_warehouse">In Warehouse</SelectItem>
                       <SelectItem value="in_transit">In Transit</SelectItem>
-                      <SelectItem value="on_hold">On Hold</SelectItem>
+                      <SelectItem value="arrived">Arrived</SelectItem>
+                      <SelectItem value="customs_check">Customs Check</SelectItem>
+                      <SelectItem value="customs_hold">Customs Clearance (ON HOLD)</SelectItem>
                       <SelectItem value="delivered">Delivered</SelectItem>
                     </SelectContent>
                   </Select>

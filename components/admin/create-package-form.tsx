@@ -189,6 +189,7 @@ export function CreatePackageForm() {
       toast.error("Error", {
         description: "An unexpected error occurred. Please try again.",
       })
+      console.error("Package creation error:", error)
     } finally {
       setIsSubmitting(false)
     }
@@ -236,8 +237,11 @@ export function CreatePackageForm() {
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in_warehouse">In Warehouse</SelectItem>
                       <SelectItem value="in_transit">In Transit</SelectItem>
-                      <SelectItem value="on_hold">On Hold</SelectItem>
+                      <SelectItem value="arrived">Arrived</SelectItem>
+                      <SelectItem value="customs_check">Customs Check</SelectItem>
+                      <SelectItem value="customs_hold">Customs Clearance (ON HOLD)</SelectItem>
                       <SelectItem value="delivered">Delivered</SelectItem>
                     </SelectContent>
                   </Select>
@@ -584,9 +588,12 @@ export function CreatePackageForm() {
                       className="w-full px-3 py-2 border rounded-md"
                     >
                       <option value="pending">Pending</option>
+                      <option value="in_warehouse">In Warehouse</option>
                       <option value="in_transit">In Transit</option>
+                      <option value="arrived">Arrived</option>
+                      <option value="customs_check">Customs Check</option>
+                      <option value="customs_hold">Customs Clearance (ON HOLD)</option>
                       <option value="delivered">Delivered</option>
-                      <option value="exception">Exception</option>
                     </select>
                   </div>
                 </div>
