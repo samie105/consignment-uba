@@ -11,6 +11,7 @@ function hashPassword(password: string): string {
   return createHash("sha256").update(password).digest("hex")
 }
 
+// Update the login function to focus on database authentication
 export async function login(formData: FormData) {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 800))
@@ -27,24 +28,56 @@ export async function login(formData: FormData) {
   }
 
   try {
-    // Query the admin_users table
-    const { data: user, error } = await supabase
+    console.log("Attempting login for:", email)
+
+    // First, check if the user exists and get their password
+    const { data: userData, error: userError } = await supabase
       .from("admin_users")
-      .select("id, email, name, role")
+      .select("id, email, name, role, password")
       .eq("email", email)
-      .eq("password", hashPassword(password)) // In a real app, you would compare hashed passwords
       .single()
 
-    if (error || !user) {
+    if (userError) {
+      console.log("Database error:", userError.message)
+      return {
+        success: false,
+        error: "Error retrieving user data",
+      }
+    }
+
+    if (!userData) {
+      console.log("User not found:", email)
       return {
         success: false,
         error: "Invalid email or password",
       }
     }
 
+    console.log("User found:", userData.email)
+
+    // Try direct password match first (for plain text passwords)
+    let passwordMatches = userData.password === password
+
+    // If that fails, try hashed password
+    if (!passwordMatches) {
+      const hashedPassword = hashPassword(password)
+      passwordMatches = userData.password === hashedPassword
+      console.log("Checking hashed password")
+    }
+
+    if (!passwordMatches) {
+      console.log("Password mismatch for user:", email)
+      return {
+        success: false,
+        error: "Invalid email or password",
+      }
+    }
+
+    console.log("Password matched, login successful")
+
     // Set auth cookie
     const oneDay = 24 * 60 * 60 * 1000
-    cookies().set("auth-token", user.id, {
+    cookies().set("auth-token", userData.id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       expires: Date.now() + oneDay,
@@ -54,10 +87,10 @@ export async function login(formData: FormData) {
     return {
       success: true,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+        role: userData.role,
       },
     }
   } catch (error) {
@@ -66,6 +99,31 @@ export async function login(formData: FormData) {
       success: false,
       error: "An error occurred during login",
     }
+  }
+}
+
+// Add a function to list users (for debugging purposes)
+export async function listUsers() {
+  try {
+    const { data: users, error } = await supabase.from("admin_users").select("id, email, name, role")
+
+    if (error) {
+      console.error("Error listing users:", error)
+      return { success: false, error: error.message }
+    }
+
+    return {
+      success: true,
+      users: users.map((user) => ({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      })),
+    }
+  } catch (error) {
+    console.error("Error listing users:", error)
+    return { success: false, error: "An error occurred while listing users" }
   }
 }
 
@@ -130,19 +188,19 @@ export async function changePassword(currentPassword: string, newPassword: strin
       }
     }
 
-    // Verify current password
-    if (hashPassword(currentPassword) !== user.password) {
+    // Try both hashed and plain text password
+    if (hashPassword(currentPassword) !== user.password && currentPassword !== user.password) {
       return {
         success: false,
         error: "Current password is incorrect",
       }
     }
 
-    // Update password
+    // Update password - store as plain text for now for simplicity
     const { error: updateError } = await supabase
       .from("admin_users")
       .update({
-        password: hashPassword(newPassword),
+        password: newPassword,
         updated_at: new Date().toISOString(),
       })
       .eq("id", authToken)
