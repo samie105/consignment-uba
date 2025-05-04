@@ -169,6 +169,25 @@ export async function getPackageById(id: string) {
   }
 }
 
+// Get a package by tracking number
+export async function getPackageByTrackingNumber(trackingNumber: string) {
+  try {
+    const supabase = createClient()
+
+    const { data, error } = await supabase.from("packages").select("*").eq("tracking_number", trackingNumber).single()
+
+    if (error) {
+      console.error("Error fetching package:", error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, package: data }
+  } catch (error: any) {
+    console.error("Unexpected error fetching package:", error)
+    return { success: false, error: error.message || "An unexpected error occurred" }
+  }
+}
+
 // Update a package
 export async function updatePackage(trackingNumber: string, packageData: any) {
   try {
@@ -426,6 +445,25 @@ export async function updateCheckpoints(trackingNumber: string, checkpoints: any
   } catch (error: any) {
     console.error("Error updating checkpoints:", error)
     return { success: false, error: error.message }
+  }
+}
+
+// Update package status
+export async function updatePackageStatus(id: string, status: string) {
+  try {
+    const supabase = createClient()
+
+    const { data, error } = await supabase.from("packages").update({ status }).eq("id", id).select().single()
+
+    if (error) {
+      console.error("Error updating package status:", error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, package: data }
+  } catch (error: any) {
+    console.error("Unexpected error updating package status:", error)
+    return { success: false, error: error.message || "An unexpected error occurred" }
   }
 }
 

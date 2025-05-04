@@ -1,30 +1,15 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { CreatePackageForm } from "@/components/admin/create-package-form"
+export const dynamic = "force-dynamic"
 
 export default function CreatePackagePage() {
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center space-x-2">
-        <Button variant="outline" size="icon" asChild>
-          <Link href="/admin/packages">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Create Package</h1>
-      </div>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">Create Package</h1>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Package Information</CardTitle>
-          <CardDescription>Enter the package details, sender and recipient information.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <CreatePackageForm />
-        </CardContent>
-      </Card>
+      {/* Package creation form will be added here */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <p>Create new package form</p>
+        {/* We'll implement the actual form in a separate component */}
+      </div>
     </div>
   )
 }

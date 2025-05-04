@@ -2,33 +2,41 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 export function middleware(request: NextRequest) {
-  // Get the path of the request
+  // Get the pathname of the request
   const path = request.nextUrl.pathname
 
   // Define public paths that don't require authentication
-  const isPublicPath = path === "/login"
+  const isPublicPath = path === "/login" || path.startsWith("/track") || path === "/"
 
-  // Check if the path is for admin routes
-  const isAdminPath = path.startsWith("/admin")
-
-  // Get the token from cookies
-  const token = request.cookies.get("auth-token")?.value
+  // Check if the user is authenticated
+  const isAuthenticated = request.cookies.has("admin")
 
   // Redirect logic
-  if (isAdminPath && !token) {
-    // Redirect to login if trying to access admin without token
-    return NextResponse.redirect(new URL("/login", request.url))
+  if (isPublicPath && isAuthenticated) {
+    // If user is on a public path but is authenticated, redirect to admin dashboard
+    if (path === "/login") {
+      return NextResponse.redirect(new URL("/admin/dashboard", request.url))
+    }
   }
 
-  if (isPublicPath && token) {
-    // Redirect to admin dashboard if already logged in
-    return NextResponse.redirect(new URL("/admin/dashboard", request.url))
+  if (!isPublicPath && !isAuthenticated) {
+    // If user is not on a public path and is not authenticated, redirect to login
+    return NextResponse.redirect(new URL("/login", request.url))
   }
 
   return NextResponse.next()
 }
 
-// Configure the paths that should be checked by the middleware
+// Configure the middleware to run on specific paths
 export const config = {
-  matcher: ["/admin/:path*", "/login"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+  ],
 }

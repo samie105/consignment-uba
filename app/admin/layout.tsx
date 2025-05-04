@@ -5,6 +5,9 @@ import { getSession } from "@/server/actions/authActions"
 import { redirect } from "next/navigation"
 import { Toaster } from "sonner"
 
+// Mark this route as dynamic
+export const dynamic = "force-dynamic"
+
 export const metadata: Metadata = {
   title: "Admin Dashboard | DeliveryUno",
   description: "Manage your delivery operations with DeliveryUno admin dashboard",
