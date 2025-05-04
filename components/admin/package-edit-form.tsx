@@ -89,7 +89,7 @@ export function PackageEditForm({ packageData, onSuccess }: PackageEditFormProps
   async function onSubmit(data: PackageFormValues) {
     setIsSubmitting(true)
     try {
-      await updatePackage(data)
+      await updatePackage(data.tracking_number, data)
       toast({
         title: "Package updated",
         description: "The package has been updated successfully.",
@@ -429,8 +429,8 @@ export function PackageEditForm({ packageData, onSuccess }: PackageEditFormProps
             </Card>
           </TabsContent>
 
-          <TabsContent value="checkpoints" className="pt-4">
-            <CheckpointEditor
+          <TabsContent value="tracking" className="space-y-4 pt-4">
+            <CheckpointEditor 
               tracking_number={packageData.tracking_number}
               initialCheckpoints={packageData.checkpoints || []}
             />

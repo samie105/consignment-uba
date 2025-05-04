@@ -1,4 +1,4 @@
-"use client"
+
 
 import TrackPackageForm from "@/components/track-package-form"
 import PackageTrackingDetails from "@/components/package-tracking-details"

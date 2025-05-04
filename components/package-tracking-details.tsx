@@ -11,6 +11,7 @@ import PackageImageGallery from "@/components/package-image-gallery"
 import ShareTrackingDialog from "@/components/share-tracking-dialog"
 import ExportPDFButton from "@/components/export-pdf-button"
 import dynamic from "next/dynamic"
+import { getPackageById } from "@/server/actions/packageActions"
 
 // Dynamically import the map component to avoid SSR issues with Leaflet
 const RealPackageMap = dynamic(() => import("@/components/map/real-package-map"), {
@@ -26,236 +27,37 @@ const RealPackageMap = dynamic(() => import("@/components/map/real-package-map")
   ),
 })
 
-// Mock data for demonstration
-const MOCK_TRACKING_DATA = {
-  DU1234567890: {
-    tracking_number: "DU1234567890",
-    status: "in_transit",
-    statusText: "In Transit",
-    estimatedDelivery: "March 15, 2025",
-    origin: "New York, NY",
-    destination: "Los Angeles, CA",
-    service: "Express Delivery",
-    weight: "2.5 kg",
-    dimensions: "30 × 20 × 15 cm",
-    senderName: "John Smith",
-    recipientName: "Jane Doe",
-    shipDate: "March 10, 2025",
-    packageType: "Parcel",
-    specialInstructions: "Handle with care. Leave at front door if no one answers.",
-    current_location: {
-      latitude: 39.7392,
-      longitude: -104.9903,
-      address: "Denver, CO",
-    },
-    checkpoints: [
-      {
-        id: "cp1",
-        status: "Picked up",
-        location: "New York, NY",
-        timestamp: "March 10, 2025 - 09:15 AM",
-        details: "Package picked up from sender",
-        isCompleted: true,
-        coordinates: {
-          lat: 40.7128,
-          lng: -74.006,
-        },
-      },
-      {
-        id: "cp2",
-        status: "Arrived at sorting facility",
-        location: "New York, NY",
-        timestamp: "March 10, 2025 - 11:30 AM",
-        details: "Package arrived at local sorting facility",
-        isCompleted: true,
-        coordinates: {
-          lat: 40.7128,
-          lng: -74.006,
-        },
-      },
-      {
-        id: "cp3",
-        status: "Departed sorting facility",
-        location: "New York, NY",
-        timestamp: "March 10, 2025 - 03:45 PM",
-        details: "Package has left the local sorting facility",
-        isCompleted: true,
-        coordinates: {
-          lat: 40.7128,
-          lng: -74.006,
-        },
-      },
-      {
-        id: "cp4",
-        status: "In transit to destination",
-        location: "En route to Los Angeles, CA",
-        timestamp: "March 11, 2025 - 08:20 AM",
-        details: "Package is in transit to the destination city",
-        isCompleted: true,
-        coordinates: {
-          lat: 39.7392,
-          lng: -104.9903,
-        },
-      },
-      {
-        id: "cp5",
-        status: "Arrived at regional hub",
-        location: "Chicago, IL",
-        timestamp: "March 12, 2025 - 02:10 PM",
-        details: "Package arrived at regional distribution center",
-        isCompleted: true,
-        coordinates: {
-          lat: 41.8781,
-          lng: -87.6298,
-        },
-      },
-    ],
-    images: [
-      {
-        id: "img1",
-        url: "/placeholder.svg?height=400&width=400&text=Package%20Front",
-        alt: "Package at pickup location in New York",
-        timestamp: "March 10, 2025 - 09:15 AM",
-        location: "New York, NY",
-        type: "pickup",
-      },
-      {
-        id: "img2",
-        url: "/placeholder.svg?height=400&width=400&text=Package%20Side",
-        alt: "Package at New York sorting facility",
-        timestamp: "March 10, 2025 - 11:30 AM",
-        location: "New York, NY",
-        type: "transit",
-      },
-    ],
-  },
-  DU9876543210: {
-    tracking_number: "DU9876543210",
-    status: "delivered",
-    statusText: "Delivered",
-    estimatedDelivery: "March 8, 2025",
-    actualDelivery: "March 8, 2025 - 02:15 PM",
-    origin: "Miami, FL",
-    destination: "Atlanta, GA",
-    service: "Standard Delivery",
-    weight: "1.2 kg",
-    dimensions: "25 × 15 × 10 cm",
-    senderName: "Robert Johnson",
-    recipientName: "Michael Williams",
-    shipDate: "March 5, 2025",
-    packageType: "Document",
-    specialInstructions: "Signature required upon delivery.",
-    current_location: {
-      latitude: 33.749,
-      longitude: -84.388,
-      address: "Atlanta, GA",
-    },
-    checkpoints: [
-      {
-        id: "cp1",
-        status: "Picked up",
-        location: "Miami, FL",
-        timestamp: "March 5, 2025 - 10:30 AM",
-        details: "Package picked up from sender",
-        isCompleted: true,
-        coordinates: {
-          lat: 25.7617,
-          lng: -80.1918,
-        },
-      },
-      {
-        id: "cp2",
-        status: "Arrived at sorting facility",
-        location: "Miami, FL",
-        timestamp: "March 5, 2025 - 01:45 PM",
-        details: "Package arrived at local sorting facility",
-        isCompleted: true,
-        coordinates: {
-          lat: 25.7617,
-          lng: -80.1918,
-        },
-      },
-      {
-        id: "cp3",
-        status: "Departed sorting facility",
-        location: "Miami, FL",
-        timestamp: "March 5, 2025 - 05:20 PM",
-        details: "Package has left the local sorting facility",
-        isCompleted: true,
-        coordinates: {
-          lat: 25.7617,
-          lng: -80.1918,
-        },
-      },
-      {
-        id: "cp4",
-        status: "In transit to destination",
-        location: "En route to Atlanta, GA",
-        timestamp: "March 6, 2025 - 09:10 AM",
-        details: "Package is in transit to the destination city",
-        isCompleted: true,
-        coordinates: {
-          lat: 30.4383,
-          lng: -84.2807,
-        },
-      },
-      {
-        id: "cp5",
-        status: "Arrived at destination hub",
-        location: "Atlanta, GA",
-        timestamp: "March 7, 2025 - 11:30 AM",
-        details: "Package arrived at destination city hub",
-        isCompleted: true,
-        coordinates: {
-          lat: 33.749,
-          lng: -84.388,
-        },
-      },
-    ],
-    images: [
-      {
-        id: "img1",
-        url: "/placeholder.svg?height=400&width=400&text=Document%20Package",
-        alt: "Package at pickup location in Miami",
-        timestamp: "March 5, 2025 - 10:30 AM",
-        location: "Miami, FL",
-        type: "pickup",
-      },
-      {
-        id: "img2",
-        url: "/placeholder.svg?height=400&width=400&text=Sorting%20Facility",
-        alt: "Package at Miami sorting facility",
-        timestamp: "March 5, 2025 - 01:45 PM",
-        location: "Miami, FL",
-        type: "transit",
-      },
-    ],
-  },
-}
-
 export default function PackageTrackingDetails({ tracking_number }: { tracking_number: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [packageData, setPackageData] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // Helper function to format dimensions
+  const formatDimensions = (dimensions: string | { width: number; height: number; length: number }) => {
+    if (typeof dimensions === 'string') return dimensions;
+    if (typeof dimensions === 'object' && dimensions !== null) {
+      const { width, height, length } = dimensions;
+      return `${width} × ${height} × ${length} cm`;
+    }
+    return 'Dimensions not available';
+  }
+
   useEffect(() => {
-    // Simulate API call to fetch tracking data
     const fetchData = async () => {
       setIsLoading(true)
       setError(null)
 
       try {
-        // Simulate network delay
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-
-        // Check if tracking number exists in mock data
-        if (MOCK_TRACKING_DATA[tracking_number as keyof typeof MOCK_TRACKING_DATA]) {
-          setPackageData(MOCK_TRACKING_DATA[tracking_number as keyof typeof MOCK_TRACKING_DATA])
-        } else {
-          setError("Package not found. Please check your tracking number and try again.")
+        const result = await getPackageById(tracking_number)
+        
+        if (!result.success || !result.package) {
+          setError(result.error || "Package not found. Please check your tracking number and try again.")
+          return
         }
-      } catch (err) {
-        setError("An error occurred while fetching tracking information. Please try again later.")
+
+        setPackageData(result.package)
+      } catch (err: any) {
+        setError(err.message || "An error occurred while fetching tracking information. Please try again later.")
       } finally {
         setIsLoading(false)
       }
@@ -303,7 +105,7 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
       case "in_transit":
         return "bg-blue-500"
       case "in_warehouse":
-        return "bg-purple-500"
+        return "bg-gray-500/50"
       case "arrived":
         return "bg-teal-500"
       case "customs_check":
@@ -423,13 +225,13 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
               <div className="space-y-4">
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">From</h3>
-                  <p className="font-medium">{packageData.origin}</p>
-                  <p className="text-sm">{packageData.senderName}</p>
+                  <p className="font-medium capitalize">{packageData.sender?.address}</p>
+                  <p className="text-sm">{packageData.sender?.fullName}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">To</h3>
-                  <p className="font-medium">{packageData.destination}</p>
-                  <p className="text-sm">{packageData.recipientName}</p>
+                  <p className="font-medium">{packageData.recipient?.address}</p>
+                  <p className="text-sm">{packageData.recipient?.fullName}</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -438,17 +240,17 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
                     {packageData.status === "delivered" ? "Delivered On" : "Estimated Delivery"}
                   </h3>
                   <p className="font-medium">
-                    {packageData.status === "delivered" ? packageData.actualDelivery : packageData.estimatedDelivery}
+                    {packageData.created_at ? new Date(packageData.created_at).toLocaleString() : 'N/A'}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-4">
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Weight</h3>
-                    <p>{packageData.weight}</p>
+                    <p>{packageData.weight}KG</p>
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Dimensions</h3>
-                    <p>{packageData.dimensions}</p>
+                    <p>{formatDimensions(packageData.dimensions)}</p>
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Package Type</h3>
@@ -481,25 +283,25 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
           <TabsList className="w-full bg-primary/10">
             <TabsTrigger
               value="tracking"
-              className="text-xs w-full sm:text-sm md:text-base data-[state=active]:bg-primary/30"
+              className="text-[10px] w-full sm:text-sm md:text-base data-[state=active]:bg-primary/30"
             >
               Tracking History
             </TabsTrigger>
             <TabsTrigger
               value="map"
-              className="text-xs w-full sm:text-sm md:text-base data-[state=active]:bg-primary/30"
+              className="text-[10px] w-full sm:text-sm md:text-base data-[state=active]:bg-primary/30"
             >
               Live Map
             </TabsTrigger>
             <TabsTrigger
               value="details"
-              className="text-xs sm:text-sm w-full md:text-base data-[state=active]:bg-primary/30"
+              className="text-[10px] sm:text-sm w-full md:text-base data-[state=active]:bg-primary/30"
             >
               Package Details
             </TabsTrigger>
             <TabsTrigger
               value="images"
-              className="text-xs sm:text-sm w-full md:text-base data-[state=active]:bg-primary/30"
+              className="text-[10px] sm:text-sm w-full md:text-base data-[state=active]:bg-primary/30"
             >
               Package Images
             </TabsTrigger>
@@ -516,18 +318,11 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
                 <CardContent>
                   <div className="relative">
                     {/* Timeline line */}
-                    <div
-                      className="absolute left-3 top-0 w-0.5 bg-gradient-to-b from-primary/60 via-primary/40 to-primary/20"
-                      style={{
-                        height: "calc(100% - 2rem)",
-                        marginLeft: "0.5px",
-                        zIndex: 0,
-                      }}
-                    ></div>
+                  
 
                     {/* Checkpoints */}
                     <div className="space-y-8">
-                      {packageData.checkpoints.map((checkpoint: any, index: number) => (
+                      {packageData.checkpoints?.map((checkpoint: any, index: number) => (
                         <motion.div
                           key={checkpoint.id}
                           className="relative pl-10"
@@ -540,53 +335,47 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
                             ease: "easeOut",
                           }}
                         >
-                          {/* Timeline dot with pulse effect */}
+                       
+                          {/* Timeline dot */}
                           <div
-                            className={`absolute left-0 top-1.5 h-6 w-6 rounded-full border-2 border-background flex items-center justify-center z-20 ${
-                              checkpoint.isCompleted
+                            className={`absolute left-0 overflow-visible top-1.5 h-6 w-6 rounded-full border-2 border-background flex items-center justify-center z-20 ${
+                              index === 0
                                 ? "bg-primary text-primary-foreground"
-                                : index === packageData.checkpoints.findIndex((cp: any) => !cp.isCompleted)
-                                  ? "bg-primary/70 text-primary-foreground"
-                                  : "bg-muted-foreground/20 text-muted-foreground"
+                                : "bg-muted-foreground/20 text-muted-foreground"
                             }`}
-                          >
-                            {checkpoint.isCompleted && <CheckCircle className="h-4 w-4" />}
+                          >    
+                         {index < packageData.checkpoints.length - 1 &&    <div
+                          className=" absolute top-9 md:top-8 w-0 border z-50 h-40 md:h-28 border-primary/50 border-dashed"
+                       
+                        />}
+                            {index === 0 && <CheckCircle className="h-4 w-4" />}
+                            {index > 0 && <div className="h-2 bg-primary animate-ping w-2 rounded-full" />}
+
                           </div>
 
-                          {/* Pulse animation for current checkpoint */}
-                          {index === packageData.checkpoints.findIndex((cp: any) => !cp.isCompleted) && (
-                            <div className="absolute left-0 top-1.5 h-6 w-6 rounded-full bg-primary/30 animate-ping" />
-                          )}
 
-                          {/* Checkpoint content with card-like styling */}
+                          {/* Checkpoint content */}
                           <div
                             className={`space-y-2 p-4 rounded-lg border transition-all ${
-                              checkpoint.isCompleted
+                              index === 0
                                 ? "bg-background border-primary/20 shadow-sm"
-                                : index === packageData.checkpoints.findIndex((cp: any) => !cp.isCompleted)
-                                  ? "bg-primary/5 border-primary/30 shadow-md"
-                                  : "bg-muted/30 border-muted hover:bg-muted/50"
+                                : "bg-muted/30 border-muted hover:bg-muted/50"
                             }`}
                           >
                             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
-                              <h3
-                                className={
-                                  index === packageData.checkpoints.findIndex((cp: any) => !cp.isCompleted)
-                                    ? "font-semibold text-primary"
-                                    : "font-semibold"
-                                }
-                              >
-                                {checkpoint.status}
+                              <h3 className={index === 0 ? "font-semibold text-primary" : "font-semibold"}>
+                              {checkpoint.description}
                               </h3>
                               <p className="text-sm text-muted-foreground flex items-center">
-                                <Clock className="h-3 w-3 mr-1 inline" /> {checkpoint.timestamp}
+                                <Clock className="h-3 w-3 mr-1 inline" />
+                                {new Date(checkpoint.timestamp).toLocaleString()}
                               </p>
                             </div>
                             <div className="flex items-start gap-2">
                               <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                               <p className="text-sm">{checkpoint.location}</p>
                             </div>
-                            <p className="text-sm text-muted-foreground">{checkpoint.details}</p>
+                            <p className={`text-sm  inline-flex text-white py-1 px-2 rounded-full ${getStatusColor(checkpoint.status)}`}> {getStatusText(checkpoint.status)}</p>
                           </div>
                         </motion.div>
                       ))}
@@ -668,11 +457,11 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
                           </div>
                           <div className="flex flex-col sm:flex-row sm:gap-2">
                             <dt className="text-sm font-medium text-muted-foreground sm:w-40">Weight:</dt>
-                            <dd>{packageData.weight}</dd>
+                            <dd>{packageData.weight}KG</dd>
                           </div>
                           <div className="flex flex-col sm:flex-row sm:gap-2">
                             <dt className="text-sm font-medium text-muted-foreground sm:w-40">Dimensions:</dt>
-                            <dd>{packageData.dimensions}</dd>
+                            <dd>{formatDimensions(packageData.dimensions)}</dd>
                           </div>
                         </dl>
                       </div>
@@ -684,11 +473,11 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
                         <dl className="space-y-3">
                           <div className="flex flex-col sm:flex-row sm:gap-2">
                             <dt className="text-sm font-medium text-muted-foreground sm:w-40">Name:</dt>
-                            <dd>{packageData.senderName}</dd>
+                            <dd>{packageData.sender.fullName}</dd>
                           </div>
                           <div className="flex flex-col sm:flex-row sm:gap-2">
                             <dt className="text-sm font-medium text-muted-foreground sm:w-40">Location:</dt>
-                            <dd>{packageData.origin}</dd>
+                            <dd>{packageData.sender.address}</dd>
                           </div>
                         </dl>
                       </div>
@@ -700,11 +489,11 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
                         <dl className="space-y-3">
                           <div className="flex flex-col sm:flex-row sm:gap-2">
                             <dt className="text-sm font-medium text-muted-foreground sm:w-40">Name:</dt>
-                            <dd>{packageData.recipientName}</dd>
+                            <dd>{packageData.recipient.fullName}</dd>
                           </div>
                           <div className="flex flex-col sm:flex-row sm:gap-2">
                             <dt className="text-sm font-medium text-muted-foreground sm:w-40">Location:</dt>
-                            <dd>{packageData.destination}</dd>
+                            <dd>{packageData.recipient.address}</dd>
                           </div>
                         </dl>
                       </div>
@@ -712,9 +501,9 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
                       <Separator />
 
                       <div>
-                        <h3 className="text-lg font-semibold mb-3">Special Instructions</h3>
+                        <h3 className="text-lg font-semibold mb-3">Current Location</h3>
                         <p className="text-sm">
-                          {packageData.specialInstructions || "No special instructions provided."}
+                          {packageData.current_location?.address || "Location information not available"}
                         </p>
                       </div>
                     </div>

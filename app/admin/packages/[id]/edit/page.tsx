@@ -5,24 +5,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { getPackageById } from "@/server/actions/packageActions"
-import { notFound } from "next/navigation"
+import { notFound, useParams } from "next/navigation"
 import { EditPackageForm } from "@/components/admin/edit-package-form"
 import { useEffect, useState } from "react"
 
-interface EditPackagePageProps {
-  params: {
-    id: string
-  }
-}
 
-export default function EditPackagePage({ params }: EditPackagePageProps) {
-  const { id } = params
+
+export default function EditPackagePage() {
+  const params = useParams()
+  const  {id}  =  params
   const [packageData, setPackageData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchPackage = async () => {
-      const response = await getPackageById(id)
+      const response = await getPackageById(id as string)
       if (!response.success || !response.package) {
         notFound()
       }

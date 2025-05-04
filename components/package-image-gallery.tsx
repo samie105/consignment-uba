@@ -3,16 +3,8 @@
 import { useState } from "react"
 import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react"
 
-interface ImageProps {
-  id: string
-  url: string
-  alt: string
-  timestamp: string
-  location: string
-  type: string
-}
 
-export function PackageImageGallery({ images }: { images: ImageProps[] }) {
+export function PackageImageGallery({ images }: { images: string[] }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isZoomed, setIsZoomed] = useState(false)
 
@@ -54,8 +46,8 @@ export function PackageImageGallery({ images }: { images: ImageProps[] }) {
           style={{ transformOrigin: "center center" }}
         >
           <img
-            src={currentImage.url || "/placeholder.svg"}
-            alt={currentImage.alt}
+            src={currentImage || "/placeholder.svg"}
+            alt={currentImage}
             className="w-full h-auto object-cover rounded-lg"
             style={{ maxHeight: "500px", width: "100%", objectFit: "contain" }}
           />
@@ -76,10 +68,10 @@ export function PackageImageGallery({ images }: { images: ImageProps[] }) {
 
       {/* Image metadata */}
       <div className="mt-4 p-4 bg-muted/20 rounded-lg">
-        <p className="text-sm font-medium">{currentImage.alt}</p>
+        {/* <p className="text-sm font-medium">{currentImage.alt}</p> */}
         <div className="flex flex-col sm:flex-row sm:justify-between mt-2 text-sm text-muted-foreground">
-          <p>{currentImage.timestamp}</p>
-          <p>{currentImage.location}</p>
+          {/* <p>{currentImage.timestamp}</p>
+          <p>{currentImage.location}</p> */}
         </div>
       </div>
 

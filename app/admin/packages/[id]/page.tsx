@@ -1,12 +1,20 @@
-import { getPackageById } from "@/server/actions/packageActions"
+import { getPackageById, updatePackageLocation } from "@/server/actions/packageActions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Printer, Edit, MapPin } from "lucide-react"
+import { ArrowLeft, Printer, Edit, MapPin, Save } from "lucide-react"
 import Link from "next/link"
 import { PackageImageGallery } from "@/components/package-image-gallery"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import DeletePackageButton from "@/components/admin/delete-package-button"
 import { DynamicLocationPicker, DynamicRealPackageMap } from "@/components/client/dynamic-imports"
+import { toast } from "sonner"
+import { Input } from "@/components/ui/input"
+
+interface LocationCoordinates {
+  lat: number;
+  lng: number;
+  address: string;
+}
 
 const statusColors = {
   pending: "bg-yellow-500",
@@ -137,7 +145,7 @@ export default async function PackageDetailsPage({ params }: { params: { id: str
                   </p>
                   <DynamicLocationPicker
                     initialLocation={packageData.current_location}
-                    
+                    tracking_number={packageData.tracking_number}
                   />
                 </div>
               </div>
@@ -158,8 +166,8 @@ export default async function PackageDetailsPage({ params }: { params: { id: str
               <Card key={index} className="p-4">
                 <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-medium">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                  <h3 className="text-lg font-medium">{item.description}</h3>
+                  <p className="text-sm text-muted-foreground">{item.title}</p>
                 </div>
                 <span
                   className={`inline-block px-2 py-1 text-xs font-medium text-white rounded ${getStatusColor(

@@ -142,6 +142,9 @@ export async function getAllPackages() {
       return { success: false, error: error.message, packages: [] }
     }
 
+   
+   
+
     return { success: true, packages: data, error: null }
   } catch (error: any) {
     console.error("Error fetching packages:", error)

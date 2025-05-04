@@ -37,7 +37,6 @@ export async function ensurePackageImagesBucket() {
       return { success: false, error: error.message }
     }
 
-    console.log("Bucket exists:", data)
     return { success: true }
   } catch (error: any) {
     console.error("Unexpected error checking bucket:", error)
