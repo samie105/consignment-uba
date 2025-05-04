@@ -25,6 +25,13 @@ export default async function AdminDashboard() {
         </Link>
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -75,7 +82,13 @@ export default async function AdminDashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          <PackageTable packages={recentPackages.slice(0, 5)} simplified={true} />
+          {success ? (
+            <PackageTable packages={recentPackages.slice(0, 5)} simplified={true} />
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-muted-foreground">No packages available</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

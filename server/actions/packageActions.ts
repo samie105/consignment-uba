@@ -87,22 +87,13 @@ export async function createPackage(data: any) {
   }
 }
 
-// Generate a tracking number
-// function generateTrackingNumber() {
-//   // Generate a random string of 12 characters
-//   const randomPart = uuidv4().replace(/-/g, "").substring(0, 8).toUpperCase()
-
-//   // Add a prefix
-//   return `DU${randomPart}`
-// }
-
 // Get all packages
 export async function getAllPackages() {
   try {
     // Check if Supabase is configured
     const configCheck = checkSupabaseConfig()
     if (!configCheck.success) {
-      return { success: false, error: configCheck.error }
+      return { success: false, error: configCheck.error, packages: [] }
     }
 
     const supabase = createClient()
@@ -110,13 +101,13 @@ export async function getAllPackages() {
 
     if (error) {
       console.error("Error fetching packages:", error)
-      return { success: false, error: error.message }
+      return { success: false, error: error.message, packages: [] }
     }
 
     return { success: true, packages: data, error: null }
   } catch (error: any) {
     console.error("Error fetching packages:", error)
-    return { success: false, error: error.message, packages: null }
+    return { success: false, error: error.message, packages: [] }
   }
 }
 
