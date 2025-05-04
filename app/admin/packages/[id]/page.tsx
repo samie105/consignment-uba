@@ -1,100 +1,187 @@
-export const dynamic = "force-dynamic"
-
-import Link from "next/link"
 import { getPackageById } from "@/server/actions/packageActions"
 import { Button } from "@/components/ui/button"
-import { notFound } from "next/navigation"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ArrowLeft, Printer, Edit, MapPin } from "lucide-react"
+import Link from "next/link"
+import { Timeline } from "@/components/custom/timeline"
+import { PackageImageGallery } from "@/components/package-image-gallery"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import DeletePackageButton from "@/components/admin/delete-package-button"
+import { DynamicLocationPicker, DynamicRealPackageMap } from "@/components/client/dynamic-imports"
 
-export default async function PackageDetailPage({ params }: { params: { id: string } }) {
-  const { package: pkg, success, error } = await getPackageById(params.id)
+const statusColors = {
+  pending: "bg-yellow-500",
+  in_warehouse: "bg-purple-500",
+  in_transit: "bg-blue-500",
+  arrived: "bg-teal-500",
+  customs_check: "bg-amber-500",
+  customs_hold: "bg-orange-500",
+  delivered: "bg-green-500",
+  exception: "bg-red-500",
+}
 
-  if (error || !pkg) {
-    return notFound()
+const statusText = {
+  pending: "Pending",
+  in_warehouse: "In Warehouse",
+  in_transit: "In Transit",
+  arrived: "Arrived",
+  customs_check: "Customs Check",
+  customs_hold: "Customs Clearance (ON HOLD)",
+  delivered: "Delivered",
+  exception: "Exception",
+}
+
+export default async function PackageDetailsPage({ params }: { params: { id: string } }) {
+  const { package: packageData, success } = await getPackageById(params.id)
+
+  if (!success || !packageData) {
+    return (
+      <div className="space-y-6 p-6">
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="icon" asChild>
+            <Link href="/admin/packages">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <h1 className="text-3xl font-bold tracking-tight">Package Not Found</h1>
+        </div>
+        <p>The requested package could not be found.</p>
+      </div>
+    )
   }
 
+  const getStatusColor = (status: string) => {
+    return statusColors[status as keyof typeof statusColors] || "bg-gray-500"
+  }
+
+  const getStatusDisplay = (status: string) => {
+    return statusText[status as keyof typeof statusText] || status.replace("_", " ").toUpperCase()
+  }
+
+  const timelineItems = packageData.checkpoints.map((checkpoint: any) => ({
+    title: checkpoint.location,
+    description: checkpoint.description,
+    date: new Date(checkpoint.timestamp).toLocaleString(),
+    status: checkpoint.status,
+  }))
+
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Package Details</h1>
+    <div className="space-y-6 p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="icon" asChild>
+            <Link href="/admin/packages">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <h1 className="text-3xl font-bold tracking-tight">Package Details</h1>
+        </div>
         <div className="flex space-x-2">
-          <Link href={`/admin/packages/${params.id}/edit`}>
-            <Button variant="outline">Edit</Button>
-          </Link>
-          <Link href={`/admin/packages/${params.id}/print`}>
-            <Button>Print</Button>
-          </Link>
+          <Button variant="outline" asChild>
+            <Link href={`/admin/packages/${packageData.trackingNumber}/print`}>
+              <Printer className="h-4 w-4 mr-2" />
+              Print
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href={`/admin/packages/${packageData.trackingNumber}/edit`}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </Link>
+          </Button>
+          <DeletePackageButton trackingNumber={packageData.trackingNumber} />
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Package Information</h2>
-            <div className="space-y-2">
-              <p>
-                <span className="font-medium">Tracking Number:</span> {pkg.tracking_number}
-              </p>
-              <p>
-                <span className="font-medium">Status:</span> {pkg.status}
-              </p>
-              <p>
-                <span className="font-medium">Description:</span> {pkg.description || "N/A"}
-              </p>
-              <p>
-                <span className="font-medium">Weight:</span> {pkg.weight ? `${pkg.weight} kg` : "N/A"}
-              </p>
-              <p>
-                <span className="font-medium">Dimensions:</span>{" "}
-                {pkg.dimensions
-                  ? `${pkg.dimensions.length}x${pkg.dimensions.width}x${pkg.dimensions.height} cm`
-                  : "N/A"}
-              </p>
-              <p>
-                <span className="font-medium">Created:</span> {new Date(pkg.created_at).toLocaleString()}
-              </p>
-            </div>
-          </div>
+      {/* Rest of the component remains the same */}
 
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Sender & Recipient</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h3 className="font-medium">Sender</h3>
-                <p>{pkg.sender?.name || "N/A"}</p>
-                <p>{pkg.sender?.address || "N/A"}</p>
-                <p>{pkg.sender?.phone || "N/A"}</p>
-                <p>{pkg.sender?.email || "N/A"}</p>
-              </div>
+      <Tabs defaultValue="tracking">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="tracking">
+            <span className="flex items-center">
+              <MapPin className="h-4 w-4 mr-2" />
+              Tracking & Location
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="history">Timeline History</TabsTrigger>
+          <TabsTrigger value="images">Package Images</TabsTrigger>
+        </TabsList>
 
-              <div>
-                <h3 className="font-medium">Recipient</h3>
-                <p>{pkg.recipient?.name || "N/A"}</p>
-                <p>{pkg.recipient?.address || "N/A"}</p>
-                <p>{pkg.recipient?.phone || "N/A"}</p>
-                <p>{pkg.recipient?.email || "N/A"}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-8">
-          <h2 className="text-lg font-semibold mb-4">Tracking History</h2>
-          <div className="space-y-4">
-            {pkg.checkpoints && pkg.checkpoints.length > 0 ? (
-              pkg.checkpoints.map((checkpoint: any) => (
-                <div key={checkpoint.id} className="border-l-2 border-blue-500 pl-4 pb-4">
-                  <p className="text-sm text-gray-500">{new Date(checkpoint.timestamp).toLocaleString()}</p>
-                  <p className="font-medium">{checkpoint.status}</p>
-                  <p>{checkpoint.location}</p>
-                  <p className="text-sm">{checkpoint.description}</p>
+        <TabsContent value="tracking" className="space-y-6 pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Package Location</CardTitle>
+              <CardDescription>Current location of the package</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Current location map - using client component wrapper */}
+                <div className="space-y-2">
+                  <h3 className="text-lg font-medium">Current Location</h3>
+                  <DynamicRealPackageMap
+                    packageData={{
+                      trackingNumber: packageData.trackingNumber,
+                      status: packageData.status,
+                      statusText: getStatusDisplay(packageData.status),
+                      current_location: packageData.current_location,
+                    }}
+                    checkpoints={packageData.checkpoints}
+                    showCheckpoints={true}
+                  />
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-500">No tracking history available</p>
-            )}
-          </div>
-        </div>
-      </div>
+
+                {/* Location picker - using client component wrapper */}
+                <div className="space-y-2 pt-4 border-t">
+                  <h3 className="text-lg font-medium">Update Package Location</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Click on the map to set a new location for this package
+                  </p>
+                  <DynamicLocationPicker
+                    trackingNumber={packageData.trackingNumber}
+                    initialLocation={packageData.current_location}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="history" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tracking History</CardTitle>
+              <CardDescription>Timeline of the package's journey</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {timelineItems.length > 0 ? (
+                <Timeline items={timelineItems} />
+              ) : (
+                <div className="text-center p-6">
+                  <p>No tracking history available yet.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="images" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Package Images</CardTitle>
+              <CardDescription>Images of the package</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {packageData.images && packageData.images.length > 0 ? (
+                <PackageImageGallery images={packageData.images} />
+              ) : (
+                <div className="text-center p-6">
+                  <p>No images available for this package yet.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

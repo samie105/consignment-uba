@@ -1,105 +1,96 @@
-export const dynamic = "force-dynamic"
-
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Package, Truck, Clock, CheckCircle } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import { getAllPackages } from "@/server/actions/packageActions"
+import { PackageTable } from "@/components/admin/package-table"
 
-export default async function DashboardPage() {
-  // Fetch packages data
-  const { packages = [], success, error } = await getAllPackages()
+export default async function AdminDashboard() {
+  const { success, packages, error } = await getAllPackages()
+
+  // Calculate statistics
+  const totalPackages = packages?.length || 0
+  const pendingPackages = packages?.filter((pkg) => pkg.status === "pending").length || 0
+  const inTransitPackages = packages?.filter((pkg) => pkg.status === "in_transit").length || 0
+  const deliveredPackages = packages?.filter((pkg) => pkg.status === "delivered").length || 0
+
+  const recentPackages = packages || []
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+    <div className="flex-1 space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+        <Link href="/admin/packages/create">
+          <Button>Create Package</Button>
+        </Link>
+      </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          <p>Error: {error}</p>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
         </div>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-medium mb-2">Total Packages</h2>
-          <p className="text-3xl font-bold">{packages?.length || 0}</p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-medium mb-2">Pending</h2>
-          <p className="text-3xl font-bold">{packages?.filter((p) => p.status === "pending")?.length || 0}</p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-medium mb-2">In Transit</h2>
-          <p className="text-3xl font-bold">{packages?.filter((p) => p.status === "in-transit")?.length || 0}</p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-medium mb-2">Delivered</h2>
-          <p className="text-3xl font-bold">{packages?.filter((p) => p.status === "delivered")?.length || 0}</p>
-        </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Packages</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalPackages}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">In Transit</CardTitle>
+            <Truck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{inTransitPackages}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">On Hold</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{pendingPackages}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Delivered</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{deliveredPackages}</div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="mt-8">
-        <h2 className="text-xl font-bold mb-4">Recent Packages</h2>
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tracking #
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sender
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Recipient
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {packages && packages.length > 0 ? (
-                packages.slice(0, 5).map((pkg) => (
-                  <tr key={pkg.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                      {pkg.tracking_number}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${
-                          pkg.status === "delivered"
-                            ? "bg-green-100 text-green-800"
-                            : pkg.status === "in-transit"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {pkg.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{pkg.sender?.name || "N/A"}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {pkg.recipient?.name || "N/A"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(pkg.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
-                    No packages found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Recent Packages */}
+      <Card className="col-span-3">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Recent Packages</CardTitle>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/admin/packages">View All</Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {success ? (
+            <PackageTable packages={recentPackages.slice(0, 5)} simplified={true} />
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-muted-foreground">No packages available</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
