@@ -4,9 +4,9 @@ import TrackPackageForm from "@/components/track-package-form"
 import PackageTrackingDetails from "@/components/package-tracking-details"
 
 export default function TrackPageClient({
-  trackingNumber,
+  tracking_number,
 }: {
-  trackingNumber?: string
+  tracking_number?: string
 }) {
   return (
     <main className="min-h-screen py-16">
@@ -20,12 +20,12 @@ export default function TrackPageClient({
           </div>
         </div>
 
-        {!trackingNumber ? (
+        {!tracking_number ? (
           <div className="max-w-md mx-auto">
             <TrackPackageForm />
           </div>
         ) : (
-          <PackageTrackingDetails trackingNumber={trackingNumber} />
+          <PackageTrackingDetails tracking_number={tracking_number} />
         )}
       </div>
     </main>

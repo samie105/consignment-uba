@@ -14,12 +14,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { toast } from "@/hooks/use-toast"
 
-export default function ShareTrackingDialog({ trackingNumber }: { trackingNumber: string }) {
+export default function ShareTrackingDialog({ tracking_number }: { tracking_number: string }) {
   const [copied, setCopied] = useState(false)
   const trackingUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/track?tracking=${trackingNumber}`
-      : `/track?tracking=${trackingNumber}`
+      ? `${window.location.origin}/track?tracking=${tracking_number}`
+      : `/track?tracking=${tracking_number}`
 
   const copyToClipboard = async () => {
     try {
@@ -40,9 +40,9 @@ export default function ShareTrackingDialog({ trackingNumber }: { trackingNumber
   }
 
   const shareViaEmail = () => {
-    const subject = encodeURIComponent(`Track Package ${trackingNumber}`)
+    const subject = encodeURIComponent(`Track Package ${tracking_number}`)
     const body = encodeURIComponent(
-      `Hello,\n\nYou can track the package with tracking number ${trackingNumber} using this link:\n${trackingUrl}\n\nRegards,`,
+      `Hello,\n\nYou can track the package with tracking number ${tracking_number} using this link:\n${trackingUrl}\n\nRegards,`,
     )
     window.location.href = `mailto:?subject=${subject}&body=${body}`
   }
@@ -84,8 +84,8 @@ export default function ShareTrackingDialog({ trackingNumber }: { trackingNumber
               if (navigator.share) {
                 navigator
                   .share({
-                    title: `Track Package ${trackingNumber}`,
-                    text: `Track package with tracking number ${trackingNumber}`,
+                    title: `Track Package ${tracking_number}`,
+                    text: `Track package with tracking number ${tracking_number}`,
                     url: trackingUrl,
                   })
                   .catch((err) => console.error("Error sharing:", err))

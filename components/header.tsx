@@ -20,7 +20,7 @@ import Cookies from "js-cookie"
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [trackingNumber, setTrackingNumber] = useState("")
+  const [tracking_number, settracking_number] = useState("")
   const [isTrackingDialogOpen, setIsTrackingDialogOpen] = useState(false)
   const { colorPalette, setColorPalette } = useThemeContext()
   const [activeSection, setActiveSection] = useState<string>("")
@@ -131,10 +131,10 @@ export default function Header() {
 
   const handleTrack = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!trackingNumber.trim()) return
+    if (!tracking_number.trim()) return
 
     // Redirect to the tracking page with the tracking number as a query parameter
-    window.location.href = `/track?tracking=${encodeURIComponent(trackingNumber.trim())}`
+    window.location.href = `/track?tracking=${encodeURIComponent(tracking_number.trim())}`
 
     // Close the dialog
     setIsTrackingDialogOpen(false)

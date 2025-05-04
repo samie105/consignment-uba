@@ -18,10 +18,10 @@ import {
 } from "@/components/ui/alert-dialog"
 
 interface DeletePackageButtonProps {
-  trackingNumber: string
+  tracking_number: string
 }
 
-export default function DeletePackageButton({ trackingNumber }: DeletePackageButtonProps) {
+export default function DeletePackageButton({ tracking_number }: DeletePackageButtonProps) {
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
@@ -29,7 +29,7 @@ export default function DeletePackageButton({ trackingNumber }: DeletePackageBut
   const handleDeletePackage = async () => {
     setIsDeleting(true)
     try {
-      const result = await deletePackage(trackingNumber)
+      const result = await deletePackage(tracking_number)
       if (result.success) {
         toast.success("Package deleted successfully")
         router.push("/admin/packages")
@@ -63,7 +63,7 @@ export default function DeletePackageButton({ trackingNumber }: DeletePackageBut
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the package with tracking number{" "}
-              <span className="font-semibold">{trackingNumber}</span> and all associated data.
+              <span className="font-semibold">{tracking_number}</span> and all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

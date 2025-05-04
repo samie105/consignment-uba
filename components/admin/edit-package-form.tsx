@@ -103,7 +103,7 @@ export function EditPackageForm({ packageData }: EditPackageFormProps) {
     setIsSubmitting(true)
 
     try {
-      const result = await updatePackage(packageData.trackingNumber, {
+      const result = await updatePackage(packageData.tracking_number, {
         ...values,
         images,
       })
@@ -112,7 +112,7 @@ export function EditPackageForm({ packageData }: EditPackageFormProps) {
         toast.success("Package updated", {
           description: "The package has been updated successfully.",
         })
-        router.push(`/admin/packages/${packageData.trackingNumber}`)
+        router.push(`/admin/packages/${packageData.tracking_number}`)
         router.refresh()
       } else {
         toast.error("Error", {
@@ -451,8 +451,8 @@ export function EditPackageForm({ packageData }: EditPackageFormProps) {
 
           <TabsContent value="tracking" className="space-y-4 pt-4">
             <CheckpointEditor
-              packageId={packageData.trackingNumber}
-              initialCheckpoints={packageData.checkpoints || []}
+             tracking_number={packageData.tracking_number}
+             onCheckpointAdded={}
             />
           </TabsContent>
 

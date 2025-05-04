@@ -202,7 +202,7 @@ export default function Services() {
                           )}
                         >
                           {" "}
-                          <Link href="#shipping" asChild>
+                          <Link href="#shipping">
                             <Button
                               variant="ghost"
                               className={cn(

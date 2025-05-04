@@ -22,9 +22,9 @@ const checkSupabaseConfig = () => {
 }
 
 // Helper function to get the current admin ID from cookies
-const getCurrentAdminId = () => {
+const getCurrentAdminId = async () => {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const adminData = cookieStore.get("admin")
 
     if (!adminData || !adminData.value) {
@@ -40,10 +40,14 @@ const getCurrentAdminId = () => {
 }
 
 // Helper function to generate a random tracking number
-function generateTrackingNumber() {
-  return `DU${Math.floor(Math.random() * 10000000000)
-    .toString()
-    .padStart(10, "0")}`
+function generatetracking_number() {
+  // Generate 11 random alphanumeric characters
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 11; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `TRK${result}`;
 }
 
 // Create a new package
@@ -52,10 +56,10 @@ export async function createPackage(data: any) {
     const supabase = createClient()
 
     // Generate a tracking number
-    const trackingNumber = generateTrackingNumber()
+    const tracking_number = generatetracking_number()
 
     // Get the current admin ID
-    const adminId = getCurrentAdminId()
+    const adminId = await getCurrentAdminId()
 
     // Add current location if not provided
     if (!data.current_location) {
@@ -70,7 +74,7 @@ export async function createPackage(data: any) {
     const { data: packageData, error } = await supabase
       .from("packages")
       .insert({
-        tracking_number: trackingNumber,
+        tracking_number: tracking_number,
         status: data.status,
         description: data.description,
         weight: data.weight,
@@ -101,7 +105,7 @@ export async function createPackage(data: any) {
 
     return {
       success: true,
-      trackingNumber,
+      tracking_number,
       package: packageData,
     }
   } catch (error: any) {
@@ -122,7 +126,7 @@ export async function getAllPackages() {
     const supabase = createClient()
 
     // Get the current admin ID
-    const adminId = getCurrentAdminId()
+    const adminId = await getCurrentAdminId()
 
     let query = supabase.from("packages").select("*")
 
@@ -170,7 +174,7 @@ export async function getPackageById(id: string) {
 }
 
 // Update a package
-export async function updatePackage(trackingNumber: string, packageData: any) {
+export async function updatePackage(tracking_number: string, packageData: any) {
   try {
     // Check if Supabase is configured
     const configCheck = checkSupabaseConfig()
@@ -193,7 +197,7 @@ export async function updatePackage(trackingNumber: string, packageData: any) {
     }
 
     // Update the package in the database
-    const { error } = await supabase.from("packages").update(updatedPackage).eq("tracking_number", trackingNumber)
+    const { error } = await supabase.from("packages").update(updatedPackage).eq("tracking_number", tracking_number)
 
     if (error) {
       console.error("Error updating package:", error)
@@ -201,7 +205,7 @@ export async function updatePackage(trackingNumber: string, packageData: any) {
     }
 
     // Revalidate the package page
-    revalidatePath(`/admin/packages/${trackingNumber}`)
+    revalidatePath(`/admin/packages/${tracking_number}`)
     revalidatePath("/admin/packages")
 
     return { success: true }
@@ -212,7 +216,7 @@ export async function updatePackage(trackingNumber: string, packageData: any) {
 }
 
 // Delete a package
-export async function deletePackage(trackingNumber: string) {
+export async function deletePackage(tracking_number: string) {
   try {
     // Check if Supabase is configured
     const configCheck = checkSupabaseConfig()
@@ -223,7 +227,7 @@ export async function deletePackage(trackingNumber: string) {
     const supabase = createClient()
 
     // Delete the package from the database
-    const { error } = await supabase.from("packages").delete().eq("tracking_number", trackingNumber)
+    const { error } = await supabase.from("packages").delete().eq("tracking_number", tracking_number)
 
     if (error) {
       console.error("Error deleting package:", error)
@@ -241,7 +245,7 @@ export async function deletePackage(trackingNumber: string) {
 }
 
 // Add a checkpoint to a package
-export async function addCheckpoint(trackingNumber: string, checkpointData: any) {
+export async function addCheckpoint(tracking_number: string, checkpointData: any) {
   try {
     // Check if Supabase is configured
     const configCheck = checkSupabaseConfig()
@@ -255,7 +259,7 @@ export async function addCheckpoint(trackingNumber: string, checkpointData: any)
     const { data: packageData, error: packageError } = await supabase
       .from("packages")
       .select("checkpoints")
-      .eq("tracking_number", trackingNumber)
+      .eq("tracking_number", tracking_number)
       .single()
 
     if (packageError) {
@@ -280,7 +284,7 @@ export async function addCheckpoint(trackingNumber: string, checkpointData: any)
     const { error } = await supabase
       .from("packages")
       .update({ checkpoints, status: checkpointData.status })
-      .eq("tracking_number", trackingNumber)
+      .eq("tracking_number", tracking_number)
 
     if (error) {
       console.error("Error adding checkpoint:", error)
@@ -288,7 +292,7 @@ export async function addCheckpoint(trackingNumber: string, checkpointData: any)
     }
 
     // Revalidate the package page
-    revalidatePath(`/admin/packages/${trackingNumber}`)
+    revalidatePath(`/admin/packages/${tracking_number}`)
     revalidatePath("/admin/packages")
 
     return { success: true, checkpoint: newCheckpoint }
@@ -299,7 +303,7 @@ export async function addCheckpoint(trackingNumber: string, checkpointData: any)
 }
 
 // Update a checkpoint
-export async function updateCheckpoint(trackingNumber: string, checkpointId: string, checkpointData: any) {
+export async function updateCheckpoint(tracking_number: string, checkpointId: string, checkpointData: any) {
   try {
     // Check if Supabase is configured
     const configCheck = checkSupabaseConfig()
@@ -313,7 +317,7 @@ export async function updateCheckpoint(trackingNumber: string, checkpointId: str
     const { data: packageData, error: packageError } = await supabase
       .from("packages")
       .select("checkpoints")
-      .eq("tracking_number", trackingNumber)
+      .eq("tracking_number", tracking_number)
       .single()
 
     if (packageError) {
@@ -336,7 +340,7 @@ export async function updateCheckpoint(trackingNumber: string, checkpointId: str
     }
 
     // Update the package in the database
-    const { error } = await supabase.from("packages").update({ checkpoints }).eq("tracking_number", trackingNumber)
+    const { error } = await supabase.from("packages").update({ checkpoints }).eq("tracking_number", tracking_number)
 
     if (error) {
       console.error("Error updating checkpoint:", error)
@@ -344,7 +348,7 @@ export async function updateCheckpoint(trackingNumber: string, checkpointId: str
     }
 
     // Revalidate the package page
-    revalidatePath(`/admin/packages/${trackingNumber}`)
+    revalidatePath(`/admin/packages/${tracking_number}`)
     revalidatePath("/admin/packages")
 
     return { success: true }
@@ -355,7 +359,7 @@ export async function updateCheckpoint(trackingNumber: string, checkpointId: str
 }
 
 // Delete a checkpoint
-export async function deleteCheckpoint(trackingNumber: string, checkpointId: string) {
+export async function deleteCheckpoint(tracking_number: string, checkpointId: string) {
   try {
     // Check if Supabase is configured
     const configCheck = checkSupabaseConfig()
@@ -369,7 +373,7 @@ export async function deleteCheckpoint(trackingNumber: string, checkpointId: str
     const { data: packageData, error: packageError } = await supabase
       .from("packages")
       .select("checkpoints")
-      .eq("tracking_number", trackingNumber)
+      .eq("tracking_number", tracking_number)
       .single()
 
     if (packageError) {
@@ -381,7 +385,7 @@ export async function deleteCheckpoint(trackingNumber: string, checkpointId: str
     const checkpoints = (packageData.checkpoints || []).filter((checkpoint: any) => checkpoint.id !== checkpointId)
 
     // Update the package in the database
-    const { error } = await supabase.from("packages").update({ checkpoints }).eq("tracking_number", trackingNumber)
+    const { error } = await supabase.from("packages").update({ checkpoints }).eq("tracking_number", tracking_number)
 
     if (error) {
       console.error("Error deleting checkpoint:", error)
@@ -389,7 +393,7 @@ export async function deleteCheckpoint(trackingNumber: string, checkpointId: str
     }
 
     // Revalidate the package page
-    revalidatePath(`/admin/packages/${trackingNumber}`)
+    revalidatePath(`/admin/packages/${tracking_number}`)
     revalidatePath("/admin/packages")
 
     return { success: true }
@@ -400,7 +404,7 @@ export async function deleteCheckpoint(trackingNumber: string, checkpointId: str
 }
 
 // Update checkpoints
-export async function updateCheckpoints(trackingNumber: string, checkpoints: any[]) {
+export async function updateCheckpoints(tracking_number: string, checkpoints: any[]) {
   try {
     // Check if Supabase is configured
     const configCheck = checkSupabaseConfig()
@@ -411,7 +415,7 @@ export async function updateCheckpoints(trackingNumber: string, checkpoints: any
     const supabase = createClient()
 
     // Update the package in the database
-    const { error } = await supabase.from("packages").update({ checkpoints }).eq("tracking_number", trackingNumber)
+    const { error } = await supabase.from("packages").update({ checkpoints }).eq("tracking_number", tracking_number)
 
     if (error) {
       console.error("Error updating checkpoints:", error)
@@ -419,7 +423,7 @@ export async function updateCheckpoints(trackingNumber: string, checkpoints: any
     }
 
     // Revalidate the package page
-    revalidatePath(`/admin/packages/${trackingNumber}`)
+    revalidatePath(`/admin/packages/${tracking_number}`)
     revalidatePath("/admin/packages")
 
     return { success: true }
@@ -430,7 +434,7 @@ export async function updateCheckpoints(trackingNumber: string, checkpoints: any
 }
 
 // Update package location
-export async function updatePackageLocation(trackingNumber: string, location: any) {
+export async function updatePackageLocation(tracking_number: string, location: any) {
   try {
     const supabase = createClient()
 
@@ -439,7 +443,7 @@ export async function updatePackageLocation(trackingNumber: string, location: an
       .update({
         current_location: location,
       })
-      .eq("tracking_number", trackingNumber)
+      .eq("tracking_number", tracking_number)
 
     if (error) {
       console.error("Error updating package location:", error)
@@ -448,7 +452,7 @@ export async function updatePackageLocation(trackingNumber: string, location: an
 
     // Use revalidatePath only in app directory components
     try {
-      revalidatePath(`/admin/packages/${trackingNumber}`)
+      revalidatePath(`/admin/packages/${tracking_number}`)
       revalidatePath(`/track`)
     } catch (e) {
       // Silently catch errors if revalidatePath is not supported

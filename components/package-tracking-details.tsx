@@ -29,7 +29,7 @@ const RealPackageMap = dynamic(() => import("@/components/map/real-package-map")
 // Mock data for demonstration
 const MOCK_TRACKING_DATA = {
   DU1234567890: {
-    trackingNumber: "DU1234567890",
+    tracking_number: "DU1234567890",
     status: "in_transit",
     statusText: "In Transit",
     estimatedDelivery: "March 15, 2025",
@@ -130,7 +130,7 @@ const MOCK_TRACKING_DATA = {
     ],
   },
   DU9876543210: {
-    trackingNumber: "DU9876543210",
+    tracking_number: "DU9876543210",
     status: "delivered",
     statusText: "Delivered",
     estimatedDelivery: "March 8, 2025",
@@ -233,7 +233,7 @@ const MOCK_TRACKING_DATA = {
   },
 }
 
-export default function PackageTrackingDetails({ trackingNumber }: { trackingNumber: string }) {
+export default function PackageTrackingDetails({ tracking_number }: { tracking_number: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [packageData, setPackageData] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
@@ -249,8 +249,8 @@ export default function PackageTrackingDetails({ trackingNumber }: { trackingNum
         await new Promise((resolve) => setTimeout(resolve, 1000))
 
         // Check if tracking number exists in mock data
-        if (MOCK_TRACKING_DATA[trackingNumber as keyof typeof MOCK_TRACKING_DATA]) {
-          setPackageData(MOCK_TRACKING_DATA[trackingNumber as keyof typeof MOCK_TRACKING_DATA])
+        if (MOCK_TRACKING_DATA[tracking_number as keyof typeof MOCK_TRACKING_DATA]) {
+          setPackageData(MOCK_TRACKING_DATA[tracking_number as keyof typeof MOCK_TRACKING_DATA])
         } else {
           setError("Package not found. Please check your tracking number and try again.")
         }
@@ -262,7 +262,7 @@ export default function PackageTrackingDetails({ trackingNumber }: { trackingNum
     }
 
     fetchData()
-  }, [trackingNumber])
+  }, [tracking_number])
 
   if (isLoading) {
     return (
@@ -375,7 +375,7 @@ export default function PackageTrackingDetails({ trackingNumber }: { trackingNum
               onSubmit={(e) => {
                 e.preventDefault()
                 const form = e.currentTarget
-                const input = form.elements.namedItem("trackingNumber") as HTMLInputElement
+                const input = form.elements.namedItem("tracking_number") as HTMLInputElement
                 if (input && input.value) {
                   window.location.href = `/track?tracking=${encodeURIComponent(input.value)}`
                 }
@@ -383,7 +383,7 @@ export default function PackageTrackingDetails({ trackingNumber }: { trackingNum
             >
               <input
                 type="text"
-                name="trackingNumber"
+                name="tracking_number"
                 placeholder="Enter tracking number"
                 className="flex-1 px-3 py-2 rounded border border-primary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 required
@@ -402,7 +402,7 @@ export default function PackageTrackingDetails({ trackingNumber }: { trackingNum
                 <CardTitle className="text-2xl">
                   Tracking Number:{" "}
                   <span className="text-primary bg-primary/10 px-2 py-1 rounded-md ml-2 inline-block">
-                    {packageData.trackingNumber}
+                    {packageData.tracking_number}
                   </span>
                 </CardTitle>
                 <CardDescription>
@@ -459,7 +459,7 @@ export default function PackageTrackingDetails({ trackingNumber }: { trackingNum
             </div>
 
             <div className="flex flex-wrap gap-2 mt-6">
-              <ShareTrackingDialog trackingNumber={packageData.trackingNumber} />
+              <ShareTrackingDialog tracking_number={packageData.tracking_number} />
               <ExportPDFButton packageData={packageData} />
             </div>
           </CardContent>
@@ -634,7 +634,7 @@ export default function PackageTrackingDetails({ trackingNumber }: { trackingNum
                         <dl className="space-y-3">
                           <div className="flex flex-col sm:flex-row sm:gap-2">
                             <dt className="text-sm font-medium text-muted-foreground sm:w-40">Tracking Number:</dt>
-                            <dd>{packageData.trackingNumber}</dd>
+                            <dd>{packageData.tracking_number}</dd>
                           </div>
                           <div className="flex flex-col sm:flex-row sm:gap-2">
                             <dt className="text-sm font-medium text-muted-foreground sm:w-40">Service Type:</dt>

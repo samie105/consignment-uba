@@ -12,7 +12,7 @@ import "leaflet/dist/leaflet.css"
 import { Save } from "lucide-react"
 
 interface LocationPickerProps {
-  trackingNumber: string
+  tracking_number: string
   initialLocation?: {
     latitude: number
     longitude: number
@@ -20,7 +20,7 @@ interface LocationPickerProps {
   }
 }
 
-export default function LocationPicker({ trackingNumber, initialLocation }: LocationPickerProps) {
+export default function LocationPicker({ tracking_number, initialLocation }: LocationPickerProps) {
   const [location, setLocation] = useState({
     latitude: initialLocation?.latitude || 40.7128,
     longitude: initialLocation?.longitude || -74.006,
@@ -136,7 +136,7 @@ export default function LocationPicker({ trackingNumber, initialLocation }: Loca
   const handleSaveLocation = async () => {
     setIsSaving(true)
     try {
-      const result = await updatePackageLocation(trackingNumber, location)
+      const result = await updatePackageLocation(tracking_number, location)
 
       if (result.success) {
         toast.success("Location updated", {

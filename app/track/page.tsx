@@ -15,7 +15,7 @@ export default function TrackPage({
 }: {
   searchParams: { [key: string]: string | string[] | undefined }
 }) {
-  const trackingNumber = typeof searchParams.tracking === "string" ? searchParams.tracking : undefined
+  const tracking_number = typeof searchParams.tracking === "string" ? searchParams.tracking : undefined
 
-  return <TrackPageClient trackingNumber={trackingNumber} />
+  return <TrackPageClient tracking_number={tracking_number} />
 }

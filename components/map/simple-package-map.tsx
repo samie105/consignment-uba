@@ -18,7 +18,7 @@ interface Checkpoint {
 }
 
 interface PackageData {
-  trackingNumber: string
+  tracking_number: string
   status: string
   statusText: string
   current_location: {

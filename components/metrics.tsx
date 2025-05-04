@@ -180,7 +180,7 @@ export default function Metrics() {
                 <form className="space-y-4">
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
-                      <Input id="trackingNumber" placeholder="Enter tracking number" className="w-full" required />
+                      <Input id="tracking_number" placeholder="Enter tracking number" className="w-full" required />
                     </div>
                   </div>
                   <DialogFooter>

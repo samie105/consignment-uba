@@ -21,11 +21,11 @@ const LocationPicker = dynamic(() => import("@/components/admin/location-picker"
 })
 
 interface CheckpointEditorProps {
-  trackingNumber: string
+  tracking_number: string
   onCheckpointAdded?: () => void
 }
 
-export function CheckpointEditor({ trackingNumber, onCheckpointAdded }: CheckpointEditorProps) {
+export function CheckpointEditor({ tracking_number, onCheckpointAdded }: CheckpointEditorProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showMap, setShowMap] = useState(false)
@@ -59,7 +59,7 @@ export function CheckpointEditor({ trackingNumber, onCheckpointAdded }: Checkpoi
     setIsSubmitting(true)
 
     try {
-      const result = await addCheckpoint(trackingNumber, {
+      const result = await addCheckpoint(tracking_number, {
         ...checkpoint,
         timestamp: new Date().toISOString(),
       })

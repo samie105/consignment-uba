@@ -4,17 +4,16 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { getAllPackages } from "@/server/actions/packageActions"
 import { PackageTable } from "@/components/admin/package-table"
+import { Package as PackageType } from "@/types/package"
 
 export default async function AdminDashboard() {
-  const { success, packages, error } = await getAllPackages()
+  const { success, packages = [], error } = await getAllPackages()
 
   // Calculate statistics
-  const totalPackages = packages?.length || 0
-  const pendingPackages = packages?.filter((pkg) => pkg.status === "pending").length || 0
-  const inTransitPackages = packages?.filter((pkg) => pkg.status === "in_transit").length || 0
-  const deliveredPackages = packages?.filter((pkg) => pkg.status === "delivered").length || 0
-
-  const recentPackages = packages || []
+  const totalPackages = packages.length
+  const pendingPackages = packages.filter((pkg: PackageType) => pkg.status === "pending").length
+  const inTransitPackages = packages.filter((pkg: PackageType) => pkg.status === "in_transit").length
+  const deliveredPackages = packages.filter((pkg: PackageType) => pkg.status === "delivered").length
 
   return (
     <div className="flex-1 space-y-6">
@@ -82,11 +81,14 @@ export default async function AdminDashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          {success ? (
-            <PackageTable packages={recentPackages.slice(0, 5)} simplified={true} />
+          {success && packages.length > 0 ? (
+            <PackageTable packages={packages.slice(0, 5)} simplified={true} />
           ) : (
-            <div className="text-center py-4">
-              <p className="text-muted-foreground">No packages available</p>
+            <div className="text-center py-8">
+              <p className="text-muted-foreground mb-4">No packages available</p>
+              <Button asChild>
+                <Link href="/admin/packages/create">Create Your First Package</Link>
+              </Button>
             </div>
           )}
         </CardContent>

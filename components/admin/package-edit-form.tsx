@@ -16,7 +16,7 @@ import { updatePackage } from "@/server/actions/packageActions"
 import { CheckpointEditor } from "./checkpoint-editor"
 
 const packageSchema = z.object({
-  trackingNumber: z.string(),
+  tracking_number: z.string(),
   status: z.string(),
   description: z.string(),
   weight: z.coerce.number().positive(),
@@ -57,7 +57,7 @@ export function PackageEditForm({ packageData, onSuccess }: PackageEditFormProps
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(packageSchema),
     defaultValues: {
-      trackingNumber: packageData.trackingNumber,
+      tracking_number: packageData.tracking_number,
       status: packageData.status,
       description: packageData.description,
       weight: packageData.weight,
@@ -120,7 +120,7 @@ export function PackageEditForm({ packageData, onSuccess }: PackageEditFormProps
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="trackingNumber"
+                name="tracking_number"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tracking Number</FormLabel>
@@ -431,7 +431,7 @@ export function PackageEditForm({ packageData, onSuccess }: PackageEditFormProps
 
           <TabsContent value="checkpoints" className="pt-4">
             <CheckpointEditor
-              trackingNumber={packageData.trackingNumber}
+              tracking_number={packageData.tracking_number}
               initialCheckpoints={packageData.checkpoints || []}
             />
           </TabsContent>

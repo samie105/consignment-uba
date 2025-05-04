@@ -19,7 +19,7 @@ export default function ExportPDFButton({ packageData }: { packageData: any }) {
       // Create a fake download
       const element = document.createElement("a")
       element.setAttribute("href", "data:application/pdf;charset=utf-8,")
-      element.setAttribute("download", `tracking_${packageData.trackingNumber}.pdf`)
+      element.setAttribute("download", `tracking_${packageData.tracking_number}.pdf`)
       element.style.display = "none"
       document.body.appendChild(element)
       element.click()

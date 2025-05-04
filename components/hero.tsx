@@ -10,7 +10,7 @@ import { TextReveal, Meteors } from "@/lib/aceternity-ui"
 import { useTheme } from "next-themes"
 
 export default function Hero() {
-  const [trackingNumber, setTrackingNumber] = useState("")
+  const [tracking_number, settracking_number] = useState("")
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
@@ -35,10 +35,10 @@ export default function Hero() {
 
   const handleTrack = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!trackingNumber.trim()) return
+    if (!tracking_number.trim()) return
 
     // Redirect to the tracking page with the tracking number as a query parameter
-    window.location.href = `/track?tracking=${encodeURIComponent(trackingNumber.trim())}`
+    window.location.href = `/track?tracking=${encodeURIComponent(tracking_number.trim())}`
 
     // Close the dialog
     setIsDialogOpen(false)

@@ -1,6 +1,6 @@
 export const mockPackageData = {
   id: "DU9876543210",
-  trackingNumber: "DU9876543210",
+  tracking_number: "DU9876543210",
   status: "In Transit",
   estimatedDelivery: "2023-12-15",
   origin: "New York, NY",

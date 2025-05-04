@@ -17,17 +17,19 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { deletePackage } from "@/server/actions/packageActions"
+import { Package } from "@/types/package"
 
 interface PackageTableProps {
-  packages: any[]
+  packages: Package[]
+  simplified?: boolean
 }
 
-export function PackageTable({ packages }: PackageTableProps) {
+export function PackageTable({ packages, simplified = false }: PackageTableProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [selectedPackage, setSelectedPackage] = useState<any>(null)
+  const [selectedPackage, setSelectedPackage] = useState<Package | null>(null)
   const router = useRouter()
 
-  const handleDelete = (pkg: any) => {
+  const handleDelete = (pkg: Package) => {
     setSelectedPackage(pkg)
     setIsDeleteDialogOpen(true)
   }
@@ -37,11 +39,11 @@ export function PackageTable({ packages }: PackageTableProps) {
 
     try {
       // Call the delete package server action
-      const result = await deletePackage(selectedPackage.trackingNumber)
+      const result = await deletePackage(selectedPackage.tracking_number)
 
       if (result.success) {
         toast.success("Package deleted", {
-          description: `Package ${selectedPackage.trackingNumber} has been deleted successfully.`,
+          description: `Package ${selectedPackage.tracking_number} has been deleted successfully.`,
         })
       } else {
         toast.error("Error", {
@@ -60,9 +62,8 @@ export function PackageTable({ packages }: PackageTableProps) {
     }
   }
 
-  const handlePrintReceipt = (pkg: any) => {
-    // Navigate to print page
-    router.push(`/admin/packages/${pkg.trackingNumber}/print`)
+  const handlePrintReceipt = (pkg: Package) => {
+    router.push(`/admin/packages/${pkg.tracking_number}/print`)
   }
 
   return (
@@ -81,10 +82,10 @@ export function PackageTable({ packages }: PackageTableProps) {
           <TableBody>
             {packages.length > 0 ? (
               packages.map((pkg) => (
-                <TableRow key={pkg.trackingNumber}>
+                <TableRow key={pkg.tracking_number}>
                   <TableCell className="font-medium">
-                    <Link href={`/admin/packages/${pkg.trackingNumber}`} className="hover:underline">
-                      {pkg.trackingNumber}
+                    <Link href={`/admin/packages/${pkg.tracking_number}`} className="hover:underline">
+                      {pkg.tracking_number}
                     </Link>
                   </TableCell>
                   <TableCell>{pkg.sender.fullName}</TableCell>
@@ -112,19 +113,19 @@ export function PackageTable({ packages }: PackageTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/admin/packages/${pkg.trackingNumber}`}>
+                          <Link href={`/admin/packages/${pkg.tracking_number}`}>
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/admin/packages/${pkg.trackingNumber}/edit`}>
+                          <Link href={`/admin/packages/${pkg.tracking_number}/edit`}>
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/admin/packages/${pkg.trackingNumber}/print`}>
+                          <Link href={`/admin/packages/${pkg.tracking_number}/print`}>
                             <Printer className="mr-2 h-4 w-4" />
                             Print Receipt
                           </Link>
@@ -155,7 +156,7 @@ export function PackageTable({ packages }: PackageTableProps) {
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete package {selectedPackage?.trackingNumber}? This action cannot be undone.
+              Are you sure you want to delete package {selectedPackage?.tracking_number}? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

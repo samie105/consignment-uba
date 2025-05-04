@@ -176,9 +176,9 @@ export function CreatePackageForm() {
 
       if (result.success) {
         toast.success("Package created", {
-          description: `Package created successfully with tracking number: ${result.trackingNumber}`,
+          description: `Package created successfully with tracking number: ${result.tracking_number}`,
         })
-        router.push(`/admin/packages/${result.trackingNumber}`)
+        router.push(`/admin/packages/${result.tracking_number}`)
         router.refresh()
       } else {
         toast.error("Error", {

@@ -11,20 +11,20 @@ import { Search, Package } from "lucide-react"
 import { toast } from "sonner"
 
 export default function TrackPackageForm({ className }: { className?: string }) {
-  const [trackingNumber, setTrackingNumber] = useState("")
+  const [tracking_number, settracking_number] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!trackingNumber.trim()) {
+    if (!tracking_number.trim()) {
       toast.error("Please enter a tracking number")
       return
     }
 
     setIsLoading(true)
     // Navigate to the tracking page with the tracking number as a query parameter
-    router.push(`/track?tracking=${encodeURIComponent(trackingNumber.trim())}`)
+    router.push(`/track?tracking=${encodeURIComponent(tracking_number.trim())}`)
   }
 
   return (
@@ -44,10 +44,10 @@ export default function TrackPackageForm({ className }: { className?: string }) 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Input
-              id="trackingNumber"
+              id="tracking_number"
               placeholder="Enter tracking number"
-              value={trackingNumber}
-              onChange={(e) => setTrackingNumber(e.target.value)}
+              value={tracking_number}
+              onChange={(e) => settracking_number(e.target.value)}
               className="w-full"
               required
             />

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Printer, Edit, MapPin } from "lucide-react"
 import Link from "next/link"
-import { Timeline } from "@/components/custom/timeline"
 import { PackageImageGallery } from "@/components/package-image-gallery"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import DeletePackageButton from "@/components/admin/delete-package-button"
@@ -32,7 +31,7 @@ const statusText = {
 }
 
 export default async function PackageDetailsPage({ params }: { params: { id: string } }) {
-  const { package: packageData, success } = await getPackageById(params.id)
+  const { package: packageData, success } = await getPackageById( params.id)
 
   if (!success || !packageData) {
     return (
@@ -78,18 +77,18 @@ export default async function PackageDetailsPage({ params }: { params: { id: str
         </div>
         <div className="flex space-x-2">
           <Button variant="outline" asChild>
-            <Link href={`/admin/packages/${packageData.trackingNumber}/print`}>
+            <Link href={`/admin/packages/${packageData.tracking_number}/print`}>
               <Printer className="h-4 w-4 mr-2" />
               Print
             </Link>
           </Button>
           <Button asChild>
-            <Link href={`/admin/packages/${packageData.trackingNumber}/edit`}>
+            <Link href={`/admin/packages/${packageData.tracking_number}/edit`}>
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Link>
           </Button>
-          <DeletePackageButton trackingNumber={packageData.trackingNumber} />
+          <DeletePackageButton tracking_number={packageData.tracking_number} />
         </div>
       </div>
 
@@ -120,7 +119,7 @@ export default async function PackageDetailsPage({ params }: { params: { id: str
                   <h3 className="text-lg font-medium">Current Location</h3>
                   <DynamicRealPackageMap
                     packageData={{
-                      trackingNumber: packageData.trackingNumber,
+                      tracking_number: packageData.tracking_number,
                       status: packageData.status,
                       statusText: getStatusDisplay(packageData.status),
                       current_location: packageData.current_location,
@@ -137,7 +136,7 @@ export default async function PackageDetailsPage({ params }: { params: { id: str
                     Click on the map to set a new location for this package
                   </p>
                   <DynamicLocationPicker
-                    trackingNumber={packageData.trackingNumber}
+                    tracking_number={packageData.tracking_number}
                     initialLocation={packageData.current_location}
                   />
                 </div>
@@ -154,7 +153,26 @@ export default async function PackageDetailsPage({ params }: { params: { id: str
             </CardHeader>
             <CardContent>
               {timelineItems.length > 0 ? (
-                <Timeline items={timelineItems} />
+            <div className="space-y-4">
+              {timelineItems.map((item:any, index:any) => (
+              <Card key={index} className="p-4">
+                <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                </div>
+                <span
+                  className={`inline-block px-2 py-1 text-xs font-medium text-white rounded ${getStatusColor(
+                  item.status
+                  )}`}
+                >
+                  {getStatusDisplay(item.status)}
+                </span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">{item.date}</p>
+              </Card>
+              ))}
+            </div>
               ) : (
                 <div className="text-center p-6">
                   <p>No tracking history available yet.</p>
