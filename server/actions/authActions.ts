@@ -1,4 +1,4 @@
-"\"use server"
+"use server"
 
 import { createClient } from "@/lib/supabase"
 import { cookies } from "next/headers"
