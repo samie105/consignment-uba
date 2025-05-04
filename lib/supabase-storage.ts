@@ -7,34 +7,52 @@ const BUCKET_NAME = "package-images"
 // Initialize the bucket - this now just checks if the bucket exists
 export const initStorage = async () => {
   try {
-    // Check if the bucket exists
-    const { data: buckets, error } = await supabase.storage.listBuckets()
+    // Check if Supabase client is properly initialized
+    if (!supabase || !supabase.storage) {
+      console.error("Supabase client is not properly initialized")
+      return {
+        success: false,
+        error: "Supabase client is not properly initialized. Please check your environment variables.",
+      }
+    }
+
+    // Log the Supabase URL to help with debugging
+    console.log("Using Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL || "Not set")
+
+    // Try to directly access the bucket instead of listing all buckets
+    const { data, error } = await supabase.storage.from(BUCKET_NAME).list()
 
     if (error) {
-      if (error.message.includes("credentials")) {
-        console.error(
-          "Supabase credentials are missing. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.",
-        )
-        return { success: false, error: "Supabase credentials are missing" }
+      // Check for specific error types
+      if (error.message.includes("bucket") && error.message.includes("not found")) {
+        console.error(`Bucket "${BUCKET_NAME}" not found. Error:`, error.message)
+        return {
+          success: false,
+          error: `Bucket "${BUCKET_NAME}" not found. Please create it in the Supabase dashboard and ensure it's public.`,
+        }
       }
 
-      console.error("Error listing buckets:", error)
+      if (error.message.includes("credentials") || error.message.includes("authentication")) {
+        console.error("Supabase authentication error:", error.message)
+        return {
+          success: false,
+          error: "Authentication failed. Please check your Supabase API key and URL.",
+        }
+      }
+
+      console.error("Error accessing storage bucket:", error)
       return { success: false, error: error.message }
     }
 
-    // Log a message if the bucket doesn't exist
-    if (!buckets?.find((bucket) => bucket.name === BUCKET_NAME)) {
-      console.warn(`Bucket "${BUCKET_NAME}" does not exist. Please create it in the Supabase dashboard.`)
-      return {
-        success: false,
-        error: `Bucket "${BUCKET_NAME}" does not exist. Please create it in the Supabase dashboard.`,
-      }
-    }
-
+    // If we got here, the bucket exists and we can access it
+    console.log(`Successfully connected to bucket "${BUCKET_NAME}"`)
     return { success: true }
   } catch (error: any) {
-    console.error("Error checking storage bucket:", error)
-    return { success: false, error: error.message || "Unknown error" }
+    console.error("Unexpected error checking storage bucket:", error)
+    return {
+      success: false,
+      error: error.message || "Unknown error accessing Supabase storage",
+    }
   }
 }
 

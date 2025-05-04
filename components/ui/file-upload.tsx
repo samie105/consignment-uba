@@ -35,11 +35,17 @@ export function FileUpload({ onUpload, initialFiles = [], maxFiles = 5, accept =
   useEffect(() => {
     const checkStorage = async () => {
       try {
+        console.log("Checking Supabase storage...")
         const result = await initStorage()
         if (!result.success) {
+          console.error("Storage initialization failed:", result.error)
           setError(result.error || "Failed to initialize storage")
+        } else {
+          console.log("Storage initialization successful")
+          setError(null)
         }
       } catch (err: any) {
+        console.error("Error during storage check:", err)
         setError(err.message || "Failed to initialize storage")
       }
     }
