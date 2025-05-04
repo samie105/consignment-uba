@@ -1,37 +1,64 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { toast } from "sonner"
-import { updatePackageLocation } from "@/server/actions/packageActions"
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
-import { Save } from "lucide-react"
+
+export interface LocationUpdateEvent {
+  lat: number
+  lng: number
+  address: string
+}
+
+export interface LocationPickerRef {
+  getLocation: () => Promise<LocationUpdateEvent | null>
+}
 
 interface LocationPickerProps {
-  tracking_number: string
   initialLocation?: {
     latitude: number
     longitude: number
-    address: string
   }
 }
 
-export default function LocationPicker({ tracking_number, initialLocation }: LocationPickerProps) {
-  const [location, setLocation] = useState({
-    latitude: initialLocation?.latitude || 40.7128,
-    longitude: initialLocation?.longitude || -74.006,
-    address: initialLocation?.address || "New York, NY",
-  })
-  const [isSaving, setIsSaving] = useState(false)
+const LocationPicker = forwardRef<LocationPickerRef, LocationPickerProps>(({ initialLocation }, ref) => {
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMapRef = useRef<L.Map | null>(null)
   const markerRef = useRef<L.Marker | null>(null)
+  const [isMapInitialized, setIsMapInitialized] = useState(false)
+  const [currentLocation, setCurrentLocation] = useState<LocationUpdateEvent | null>(null)
 
+  const getAddressFromCoordinates = async (lat: number, lng: number) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+      )
+      const data = await response.json()
+      return data.display_name || "Address not found"
+    } catch (error) {
+      console.error("Error getting address:", error)
+      return "Address not found"
+    }
+  }
+
+  const handleLocationUpdate = async (lat: number, lng: number) => {
+    const address = await getAddressFromCoordinates(lat, lng)
+    const location = { lat, lng, address }
+    setCurrentLocation(location)
+    return location
+  }
+
+  useImperativeHandle(ref, () => ({
+    getLocation: async () => {
+      return currentLocation
+    }
+  }))
+
+  // Initialize map only once
   useEffect(() => {
+    if (!mapRef.current || isMapInitialized || leafletMapRef.current) return
+
     // Fix Leaflet icon issues
     if (typeof window !== "undefined") {
       delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -42,175 +69,73 @@ export default function LocationPicker({ tracking_number, initialLocation }: Loc
       })
     }
 
-    // Initialize map if it doesn't exist
-    if (mapRef.current && !leafletMapRef.current) {
-      leafletMapRef.current = L.map(mapRef.current).setView([location.latitude, location.longitude], 10)
+    const initialLat = initialLocation?.latitude || 40.7128
+    const initialLng = initialLocation?.longitude || -74.006
 
-      // Add OpenStreetMap tile layer
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-      }).addTo(leafletMapRef.current)
+    const map = L.map(mapRef.current).setView([initialLat, initialLng], 10)
+    leafletMapRef.current = map
 
-      // Add marker for current location
-      markerRef.current = L.marker([location.latitude, location.longitude], {
-        draggable: true,
-      }).addTo(leafletMapRef.current)
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }).addTo(map)
 
-      // Update location when marker is dragged
-      markerRef.current.on("dragend", (e) => {
-        const marker = e.target
-        const position = marker.getLatLng()
-        setLocation((prev) => ({
-          ...prev,
-          latitude: position.lat,
-          longitude: position.lng,
-        }))
-        reverseGeocode(position.lat, position.lng)
-      })
+    // Add marker for current location
+    const marker = L.marker([initialLat, initialLng], {
+      draggable: true,
+    }).addTo(map)
+    markerRef.current = marker
 
-      // Update location when map is clicked
-      leafletMapRef.current.on("click", (e) => {
-        const position = e.latlng
-        if (markerRef.current) {
-          markerRef.current.setLatLng(position)
-        }
-        setLocation((prev) => ({
-          ...prev,
-          latitude: position.lat,
-          longitude: position.lng,
-        }))
-        reverseGeocode(position.lat, position.lng)
-      })
+    // Update location when marker is dragged
+    marker.on("dragend", async (e) => {
+      const position = e.target.getLatLng()
+      await handleLocationUpdate(position.lat, position.lng)
+    })
+
+    // Update location when map is clicked
+    map.on("click", async (e) => {
+      const position = e.latlng
+      marker.setLatLng(position)
+      await handleLocationUpdate(position.lat, position.lng)
+    })
+
+    // Get initial address if coordinates are provided
+    if (initialLocation) {
+      handleLocationUpdate(initialLocation.latitude, initialLocation.longitude)
     }
+
+    setIsMapInitialized(true)
 
     // Cleanup function
     return () => {
-      if (leafletMapRef.current && typeof window !== "undefined") {
-        leafletMapRef.current.remove()
+      if (map && typeof window !== "undefined") {
+        map.remove()
         leafletMapRef.current = null
         markerRef.current = null
+        setIsMapInitialized(false)
       }
     }
-  }, [])
+  }, []) // Empty dependency array to run only once
 
-  // Update marker position if location changes
+  // Update marker position when initialLocation changes
   useEffect(() => {
-    if (markerRef.current && leafletMapRef.current) {
-      markerRef.current.setLatLng([location.latitude, location.longitude])
-      leafletMapRef.current.setView([location.latitude, location.longitude], leafletMapRef.current.getZoom())
-    }
-  }, [location.latitude, location.longitude])
-
-  // Simple reverse geocoding using Nominatim
-  const reverseGeocode = async (lat: number, lng: number) => {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-      )
-      const data = await response.json()
-
-      if (data && data.display_name) {
-        setLocation((prev) => ({
-          ...prev,
-          address: data.display_name,
-        }))
+    if (markerRef.current && initialLocation) {
+      markerRef.current.setLatLng([initialLocation.latitude, initialLocation.longitude])
+      if (leafletMapRef.current) {
+        leafletMapRef.current.setView([initialLocation.latitude, initialLocation.longitude], 10)
       }
-    } catch (error) {
-      console.error("Error reverse geocoding:", error)
-      // If geocoding fails, just use coordinates as address
-      setLocation((prev) => ({
-        ...prev,
-        address: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`,
-      }))
     }
-  }
-
-  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocation((prev) => ({
-      ...prev,
-      address: e.target.value,
-    }))
-  }
-
-  const handleSaveLocation = async () => {
-    setIsSaving(true)
-    try {
-      const result = await updatePackageLocation(tracking_number, location)
-
-      if (result.success) {
-        toast.success("Location updated", {
-          description: "The package location has been updated successfully.",
-        })
-      } else {
-        toast.error("Error", {
-          description: result.error || "Failed to update location. Please try again.",
-        })
-      }
-    } catch (error) {
-      toast.error("Error", {
-        description: "An unexpected error occurred. Please try again.",
-      })
-    } finally {
-      setIsSaving(false)
-    }
-  }
+  }, [initialLocation])
 
   return (
-    <div className="space-y-4">
-      <div
-        ref={mapRef}
-        className="w-full h-[300px] rounded-lg border overflow-hidden"
-        aria-label="Location picker map"
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label htmlFor="latitude" className="block text-sm font-medium mb-1">
-            Latitude
-          </label>
-          <Input
-            id="latitude"
-            type="number"
-            step="0.000001"
-            value={location.latitude}
-            onChange={(e) => setLocation((prev) => ({ ...prev, latitude: Number.parseFloat(e.target.value) }))}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="longitude" className="block text-sm font-medium mb-1">
-            Longitude
-          </label>
-          <Input
-            id="longitude"
-            type="number"
-            step="0.000001"
-            value={location.longitude}
-            onChange={(e) => setLocation((prev) => ({ ...prev, longitude: Number.parseFloat(e.target.value) }))}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="address" className="block text-sm font-medium mb-1">
-            Address
-          </label>
-          <Input id="address" value={location.address} onChange={handleAddressChange} />
-        </div>
-      </div>
-
-      <div className="flex justify-end">
-        <Button onClick={handleSaveLocation} disabled={isSaving}>
-          {isSaving ? (
-            <>Saving...</>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              Save Location
-            </>
-          )}
-        </Button>
-      </div>
-    </div>
+    <div
+      ref={mapRef}
+      className="w-full h-[300px]"
+      aria-label="Location picker map"
+    />
   )
-}
+})
+
+LocationPicker.displayName = "LocationPicker"
+
+export default LocationPicker

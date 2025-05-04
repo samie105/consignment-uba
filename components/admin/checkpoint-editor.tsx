@@ -1,6 +1,8 @@
 "use client"
 
 import type React from "react"
+import { useRef } from "react"
+import type { LocationPickerRef } from "./location-picker"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -29,6 +31,10 @@ export function CheckpointEditor({ tracking_number, onCheckpointAdded }: Checkpo
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showMap, setShowMap] = useState(false)
+  const locationPickerRef = useRef<LocationPickerRef>(null)
+  const leafletMapRef = useRef<L.Map | null>(null)
+  const markerRef = useRef<L.Marker | null>(null)
+
   const [checkpoint, setCheckpoint] = useState({
     location: "",
     description: "",
@@ -38,21 +44,38 @@ export function CheckpointEditor({ tracking_number, onCheckpointAdded }: Checkpo
   const [errors, setErrors] = useState({
     location: false,
     description: false,
+    coordinates: false,
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault()
+    }
+
+    // Get location from the map if it's shown
+    if (showMap) {
+      const location = await locationPickerRef.current?.getLocation()
+      if (location) {
+        setCheckpoint(prev => ({
+          ...prev,
+          location: location.address,
+          coordinates: { lat: location.lat, lng: location.lng }
+        }))
+      }
+    }
 
     // Validate fields
     const locationError = !checkpoint.location.trim()
     const descriptionError = !checkpoint.description.trim()
+    const coordinatesError = !checkpoint.coordinates
 
     setErrors({
       location: locationError,
       description: descriptionError,
+      coordinates: coordinatesError,
     })
 
-    if (locationError || descriptionError) {
+    if (locationError || descriptionError || coordinatesError) {
       return
     }
 
@@ -79,12 +102,10 @@ export function CheckpointEditor({ tracking_number, onCheckpointAdded }: Checkpo
 
         setShowMap(false)
 
-        // Callback
         if (onCheckpointAdded) {
           onCheckpointAdded()
         }
 
-        // Refresh the page
         router.refresh()
       } else {
         toast.error("Error", {
@@ -100,11 +121,18 @@ export function CheckpointEditor({ tracking_number, onCheckpointAdded }: Checkpo
     }
   }
 
-  const handleCoordinatesSelected = (lat: number, lng: number) => {
-    setCheckpoint({
-      ...checkpoint,
-      coordinates: { lat, lng },
-    })
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const location = e.target.value
+    setCheckpoint(prev => ({
+      ...prev,
+      location
+    }))
+    if (location.trim()) {
+      setErrors(prev => ({
+        ...prev,
+        location: false
+      }))
+    }
   }
 
   return (
@@ -114,7 +142,7 @@ export function CheckpointEditor({ tracking_number, onCheckpointAdded }: Checkpo
         <CardDescription>Add a new tracking checkpoint for this package</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div>
             <label htmlFor="location" className="block text-sm font-medium">
               Location
@@ -123,12 +151,7 @@ export function CheckpointEditor({ tracking_number, onCheckpointAdded }: Checkpo
               id="location"
               placeholder="e.g., Sorting Facility, New York"
               value={checkpoint.location}
-              onChange={(e) => {
-                setCheckpoint({ ...checkpoint, location: e.target.value })
-                if (e.target.value.trim()) {
-                  setErrors({ ...errors, location: false })
-                }
-              }}
+              onChange={handleLocationChange}
               className={errors.location ? "border-destructive" : ""}
             />
             {errors.location && <p className="text-sm text-destructive mt-1">Location is required</p>}
@@ -173,35 +196,43 @@ export function CheckpointEditor({ tracking_number, onCheckpointAdded }: Checkpo
             </Select>
           </div>
 
-          <div>
-            <Button type="button" variant="outline" className="w-full" onClick={() => setShowMap(!showMap)}>
-              <MapPin className="mr-2 h-4 w-4" />
-              {showMap ? "Hide Map" : "Set Location on Map"}
-            </Button>
+          <div className="space-y-4">
+            <div>
+              <Button type="button" variant="outline" className="w-full" onClick={() => setShowMap(!showMap)}>
+                <MapPin className="mr-2 h-4 w-4" />
+                {showMap ? "Hide Map" : "Set Location on Map"}
+              </Button>
+            </div>
+
+            {showMap && (
+              <div className="pt-2">
+                <p className="text-sm text-muted-foreground mb-2">Click on the map to set the checkpoint location</p>
+                <div className="rounded-md overflow-hidden border">
+                  <LocationPicker 
+                    ref={locationPickerRef}
+                    initialLocation={checkpoint.coordinates ? {
+                      latitude: checkpoint.coordinates.lat,
+                      longitude: checkpoint.coordinates.lng
+                    } : undefined}
+                  />
+                </div>
+                {errors.coordinates && (
+                  <p className="text-sm text-destructive mt-1">Location coordinates are required</p>
+                )}
+              </div>
+            )}
           </div>
 
-          {showMap && (
-            <div className="pt-2">
-              <p className="text-sm text-muted-foreground mb-2">Click on the map to set the checkpoint location</p>
-              <div className="h-[300px] rounded-md overflow-hidden border">
-                {/* Map component will be loaded here */}
-                <div className="h-full bg-muted flex items-center justify-center">
-                  <p>Map loading...</p>
-                </div>
-              </div>
-              {checkpoint.coordinates && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Selected coordinates: {checkpoint.coordinates.lat.toFixed(6)}, {checkpoint.coordinates.lng.toFixed(6)}
-                </p>
-              )}
-            </div>
-          )}
-
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <Button 
+            type="button" 
+            className="w-full" 
+            disabled={isSubmitting}
+            onClick={() => handleSubmit()}
+          >
             <Plus className="mr-2 h-4 w-4" />
             {isSubmitting ? "Adding..." : "Add Checkpoint"}
           </Button>
-        </form>
+        </div>
       </CardContent>
     </Card>
   )

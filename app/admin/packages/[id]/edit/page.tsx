@@ -1,3 +1,5 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft } from "lucide-react"
@@ -5,6 +7,7 @@ import Link from "next/link"
 import { getPackageById } from "@/server/actions/packageActions"
 import { notFound } from "next/navigation"
 import { EditPackageForm } from "@/components/admin/edit-package-form"
+import { useEffect, useState } from "react"
 
 interface EditPackagePageProps {
   params: {
@@ -12,12 +15,35 @@ interface EditPackagePageProps {
   }
 }
 
-export default async function EditPackagePage({ params }: EditPackagePageProps) {
+export default function EditPackagePage({ params }: EditPackagePageProps) {
   const { id } = params
-  const response = await getPackageById(id)
+  const [packageData, setPackageData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  if (!response.success || !response.package) {
-    notFound()
+  useEffect(() => {
+    const fetchPackage = async () => {
+      const response = await getPackageById(id)
+      if (!response.success || !response.package) {
+        notFound()
+      }
+      setPackageData(response.package)
+      setIsLoading(false)
+    }
+
+    fetchPackage()
+  }, [id])
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="icon" disabled>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-3xl font-bold tracking-tight">Loading...</h1>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -37,7 +63,7 @@ export default async function EditPackagePage({ params }: EditPackagePageProps) 
           <CardDescription>Update the package details, tracking information, and delivery status.</CardDescription>
         </CardHeader>
         <CardContent>
-          <EditPackageForm packageData={response.package} />
+          <EditPackageForm packageData={packageData} />
         </CardContent>
       </Card>
     </div>

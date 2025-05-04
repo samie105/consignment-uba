@@ -451,8 +451,11 @@ export function EditPackageForm({ packageData }: EditPackageFormProps) {
 
           <TabsContent value="tracking" className="space-y-4 pt-4">
             <CheckpointEditor
-             tracking_number={packageData.tracking_number}
-             onCheckpointAdded={}
+              tracking_number={packageData.tracking_number}
+              onCheckpointAdded={() => {
+                router.refresh()
+                toast.success("Checkpoint added successfully")
+              }}
             />
           </TabsContent>
 

@@ -136,8 +136,8 @@ export default async function PackageDetailsPage({ params }: { params: { id: str
                     Click on the map to set a new location for this package
                   </p>
                   <DynamicLocationPicker
-                    tracking_number={packageData.tracking_number}
                     initialLocation={packageData.current_location}
+                    
                   />
                 </div>
               </div>
