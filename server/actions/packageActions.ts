@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase"
 import { revalidatePath } from "next/cache"
 import { v4 as uuidv4 } from "uuid"
+import { cookies } from "next/headers"
 
 // Helper function to check if Supabase is configured
 const checkSupabaseConfig = () => {
@@ -20,6 +21,24 @@ const checkSupabaseConfig = () => {
   return { success: true }
 }
 
+// Helper function to get the current admin ID from cookies
+const getCurrentAdminId = () => {
+  try {
+    const cookieStore = cookies()
+    const adminData = cookieStore.get("admin")
+
+    if (!adminData || !adminData.value) {
+      return null
+    }
+
+    const parsedData = JSON.parse(adminData.value)
+    return parsedData.id || null
+  } catch (error) {
+    console.error("Error getting admin ID from cookies:", error)
+    return null
+  }
+}
+
 // Helper function to generate a random tracking number
 function generateTrackingNumber() {
   return `DU${Math.floor(Math.random() * 10000000000)
@@ -34,6 +53,9 @@ export async function createPackage(data: any) {
 
     // Generate a tracking number
     const trackingNumber = generateTrackingNumber()
+
+    // Get the current admin ID
+    const adminId = getCurrentAdminId()
 
     // Add current location if not provided
     if (!data.current_location) {
@@ -59,6 +81,7 @@ export async function createPackage(data: any) {
         images: data.images || [],
         checkpoints: data.checkpoints || [],
         current_location: data.current_location,
+        admin_id: adminId,
       })
       .select()
       .single()
@@ -97,7 +120,18 @@ export async function getAllPackages() {
     }
 
     const supabase = createClient()
-    const { data, error } = await supabase.from("packages").select("*").order("created_at", { ascending: false })
+
+    // Get the current admin ID
+    const adminId = getCurrentAdminId()
+
+    let query = supabase.from("packages").select("*")
+
+    // If admin ID is available, filter by admin
+    if (adminId) {
+      query = query.eq("admin_id", adminId)
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: false })
 
     if (error) {
       console.error("Error fetching packages:", error)

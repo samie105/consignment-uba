@@ -1,226 +1,208 @@
-"use server"
+"\"use server"
 
+import { createClient } from "@/lib/supabase"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { supabase } from "@/lib/supabase"
 import { createHash } from "crypto"
 
-// Simple password hashing function
-// In a production app, you would use a more secure method like bcrypt
+// Helper function to hash passwords
 function hashPassword(password: string): string {
   return createHash("sha256").update(password).digest("hex")
 }
 
-// Update the login function to focus on database authentication
+// Login function
 export async function login(formData: FormData) {
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 800))
-
-  const email = formData.get("email") as string
-  const password = formData.get("password") as string
-
-  // Validate input
-  if (!email || !password) {
-    return {
-      success: false,
-      error: "Email and password are required",
-    }
-  }
-
   try {
-    console.log("Attempting login for:", email)
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
 
-    // First, check if the user exists and get their password
+    if (!email || !password) {
+      return { success: false, error: "Email and password are required" }
+    }
+
+    console.log(`Attempting login for email: ${email}`)
+
+    const supabase = createClient()
+
+    // First, check if the user exists
     const { data: userData, error: userError } = await supabase
       .from("admin_users")
-      .select("id, email, name, role, password")
+      .select("*")
       .eq("email", email)
       .single()
 
     if (userError) {
-      console.log("Database error:", userError.message)
-      return {
-        success: false,
-        error: "Error retrieving user data",
-      }
+      console.error("Error fetching user:", userError)
+      return { success: false, error: "Invalid email or password" }
     }
 
     if (!userData) {
-      console.log("User not found:", email)
-      return {
-        success: false,
-        error: "Invalid email or password",
-      }
+      console.log("User not found")
+      return { success: false, error: "Invalid email or password" }
     }
 
-    console.log("User found:", userData.email)
+    console.log("User found, checking password")
 
-    // Try direct password match first (for plain text passwords)
-    let passwordMatches = userData.password === password
-
-    // If that fails, try hashed password
-    if (!passwordMatches) {
-      const hashedPassword = hashPassword(password)
-      passwordMatches = userData.password === hashedPassword
-      console.log("Checking hashed password")
-    }
+    // Check if the password matches (try both hashed and plain)
+    const hashedPassword = hashPassword(password)
+    const passwordMatches = userData.password === hashedPassword || userData.password === password
 
     if (!passwordMatches) {
-      console.log("Password mismatch for user:", email)
-      return {
-        success: false,
-        error: "Invalid email or password",
-      }
+      console.log("Password doesn't match")
+      console.log(`Provided hash: ${hashedPassword}`)
+      console.log(`Stored password: ${userData.password}`)
+      return { success: false, error: "Invalid email or password" }
     }
 
-    console.log("Password matched, login successful")
-
-    // Set auth cookie
-    const oneDay = 24 * 60 * 60 * 1000
-    cookies().set("auth-token", userData.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      expires: Date.now() + oneDay,
-      path: "/",
-    })
-
-    return {
-      success: true,
-      user: {
+    // Set a cookie with the user data
+    const cookieStore = cookies()
+    cookieStore.set(
+      "admin",
+      JSON.stringify({
         id: userData.id,
         email: userData.email,
-        name: userData.name,
         role: userData.role,
+        name: userData.full_name,
+      }),
+      {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7, // 1 week
       },
-    }
-  } catch (error) {
-    console.error("Login error:", error)
-    return {
-      success: false,
-      error: "An error occurred during login",
-    }
+    )
+
+    console.log("Login successful")
+    return { success: true }
+  } catch (error: any) {
+    console.error("Unexpected error during login:", error)
+    return { success: false, error: error.message || "An unexpected error occurred" }
   }
 }
 
-// Add a function to list users (for debugging purposes)
-export async function listUsers() {
-  try {
-    const { data: users, error } = await supabase.from("admin_users").select("id, email, name, role")
-
-    if (error) {
-      console.error("Error listing users:", error)
-      return { success: false, error: error.message }
-    }
-
-    return {
-      success: true,
-      users: users.map((user) => ({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      })),
-    }
-  } catch (error) {
-    console.error("Error listing users:", error)
-    return { success: false, error: "An error occurred while listing users" }
-  }
-}
-
+// Logout function
 export async function logout() {
-  cookies().delete("auth-token")
+  const cookieStore = cookies()
+  cookieStore.delete("admin")
   redirect("/login")
 }
 
+// Check if the user is logged in
 export async function getSession() {
-  const authToken = cookies().get("auth-token")?.value
+  const cookieStore = cookies()
+  const admin = cookieStore.get("admin")
 
-  if (!authToken) {
+  if (!admin) {
     return null
   }
 
   try {
-    // Query the admin_users table
-    const { data: user, error } = await supabase
-      .from("admin_users")
-      .select("id, email, name, role")
-      .eq("id", authToken)
-      .single()
-
-    if (error || !user) {
-      return null
-    }
-
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    }
+    const adminData = JSON.parse(admin.value)
+    return adminData
   } catch (error) {
-    console.error("Session error:", error)
     return null
   }
 }
 
-export async function changePassword(currentPassword: string, newPassword: string) {
+// Create a new admin user
+export async function createAdmin(formData: FormData) {
   try {
-    const authToken = cookies().get("auth-token")?.value
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
+    const fullName = formData.get("fullName") as string
 
-    if (!authToken) {
-      return {
-        success: false,
-        error: "Not authenticated",
-      }
+    if (!email || !password) {
+      return { success: false, error: "Email and password are required" }
     }
 
-    // Get the user
-    const { data: user, error: userError } = await supabase
+    const supabase = createClient()
+
+    // Check if the user already exists
+    const { data: existingUser, error: checkError } = await supabase
       .from("admin_users")
-      .select("id, password")
-      .eq("id", authToken)
+      .select("*")
+      .eq("email", email)
       .single()
 
-    if (userError || !user) {
-      return {
-        success: false,
-        error: "User not found",
-      }
+    if (existingUser) {
+      return { success: false, error: "User with this email already exists" }
     }
 
-    // Try both hashed and plain text password
-    if (hashPassword(currentPassword) !== user.password && currentPassword !== user.password) {
-      return {
-        success: false,
-        error: "Current password is incorrect",
-      }
-    }
+    // Hash the password
+    const hashedPassword = hashPassword(password)
 
-    // Update password - store as plain text for now for simplicity
-    const { error: updateError } = await supabase
+    // Insert the new admin
+    const { data, error } = await supabase
       .from("admin_users")
-      .update({
-        password: newPassword,
-        updated_at: new Date().toISOString(),
+      .insert({
+        email,
+        password: hashedPassword,
+        full_name: fullName,
+        role: "admin",
       })
-      .eq("id", authToken)
+      .select()
+      .single()
 
-    if (updateError) {
-      return {
-        success: false,
-        error: "Failed to update password",
-      }
+    if (error) {
+      console.error("Error creating admin:", error)
+      return { success: false, error: error.message }
     }
 
-    return {
-      success: true,
-      message: "Password updated successfully",
+    return { success: true, admin: data }
+  } catch (error: any) {
+    console.error("Unexpected error creating admin:", error)
+    return { success: false, error: error.message || "An unexpected error occurred" }
+  }
+}
+
+// Change password
+export async function changePassword(currentPassword: string, newPassword: string) {
+  try {
+    if (!currentPassword || !newPassword) {
+      return { success: false, error: "All fields are required" }
     }
-  } catch (error) {
-    console.error("Change password error:", error)
-    return {
-      success: false,
-      error: "An error occurred while changing password",
+
+    // Get the current admin
+    const cookieStore = cookies()
+    const admin = cookieStore.get("admin")
+
+    if (!admin) {
+      return { success: false, error: "Not logged in" }
     }
+
+    const adminData = JSON.parse(admin.value)
+    const supabase = createClient()
+
+    // Check the current password
+    const hashedCurrentPassword = hashPassword(currentPassword)
+    const { data: userData, error: userError } = await supabase
+      .from("admin_users")
+      .select("*")
+      .eq("id", adminData.id)
+      .single()
+
+    if (userError || !userData) {
+      console.error("Error fetching user:", userError)
+      return { success: false, error: "User not found" }
+    }
+
+    if (userData.password !== hashedCurrentPassword) {
+      return { success: false, error: "Current password is incorrect" }
+    }
+
+    // Update the password
+    const hashedNewPassword = hashPassword(newPassword)
+    const { error } = await supabase.from("admin_users").update({ password: hashedNewPassword }).eq("id", adminData.id)
+
+    if (error) {
+      console.error("Error updating password:", error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true }
+  } catch (error: any) {
+    console.error("Unexpected error changing password:", error)
+    return { success: false, error: error.message || "An unexpected error occurred" }
   }
 }
