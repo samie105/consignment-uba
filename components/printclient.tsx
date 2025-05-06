@@ -14,7 +14,7 @@ export default function Printclient({packageData,params}:{packageData:any,params
       if (receiptRef.current) {
         const element = receiptRef.current
         const opt = {
-          margin: [10, 10, 10, 10],
+          margin: [10, 10, 10, 10] as [number, number, number, number],
           filename: `DeliveryUno-Receipt-${packageData.tracking_number}.pdf`,
           image: { type: "jpeg", quality: 0.98 },
           html2canvas: { scale: 2, useCORS: true },

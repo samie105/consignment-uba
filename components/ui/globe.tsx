@@ -1,13 +1,16 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
-import { Color, Fog } from "three"
+import * as THREE from "three"
 import ThreeGlobe from "three-globe"
-import { useThree, type Object3DNode, Canvas, extend } from "@react-three/fiber"
+import { useThree, Canvas, extend } from "@react-three/fiber"
 import { OrbitControls } from "@react-three/drei"
 import countries from "@/data/globe.json"
+import React from "react"
+
+// Create a type definition for ThreeGlobe
 declare module "@react-three/fiber" {
   interface ThreeElements {
-    threeGlobe: Object3DNode<ThreeGlobe, typeof ThreeGlobe>
+    threeGlobe: { ref?: React.RefObject<ThreeGlobe | null> } & Omit<React.ComponentProps<"group">, "ref">
   }
 }
 
@@ -102,13 +105,13 @@ export function Globe({ globeConfig, data }: WorldProps) {
     if (!globeRef.current) return
 
     const globeMaterial = globeRef.current.globeMaterial() as unknown as {
-      color: Color
-      emissive: Color
+      color: THREE.Color
+      emissive: THREE.Color
       emissiveIntensity: number
       shininess: number
     }
-    globeMaterial.color = new Color(globeConfig.globeColor)
-    globeMaterial.emissive = new Color(globeConfig.emissive)
+    globeMaterial.color = new THREE.Color(globeConfig.globeColor)
+    globeMaterial.emissive = new THREE.Color(globeConfig.emissive)
     globeMaterial.emissiveIntensity = globeConfig.emissiveIntensity || 0.1
     globeMaterial.shininess = globeConfig.shininess || 0.9
   }
@@ -235,7 +238,7 @@ export function World(props: WorldProps) {
 
   return (
     <Canvas camera={{ position: [0, 0, cameraZ], fov: 50, aspect, near: 180, far: 1800 }}>
-      <scene fog={new Fog(0xffffff, 400, 2000)}>
+      <scene fog={new THREE.Fog(0xffffff, 400, 2000)}>
         <WebGLRendererConfig />
         <ambientLight color={globeConfig.ambientLight} intensity={0.6} />
         <directionalLight color={globeConfig.directionalLeftLight} position={[-400, 100, 400]} />

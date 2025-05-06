@@ -1,21 +1,13 @@
-import { getPackageById, updatePackageLocation } from "@/server/actions/packageActions"
+import { getPackageById } from "@/server/actions/packageActions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Printer, Edit, MapPin, Save } from "lucide-react"
+import { ArrowLeft, Printer, Edit, MapPin } from "lucide-react"
 import Link from "next/link"
 import { PackageImageGallery } from "@/components/package-image-gallery"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import DeletePackageButton from "@/components/admin/delete-package-button"
 import { DynamicLocationPicker, DynamicRealPackageMap } from "@/components/client/dynamic-imports"
-import { toast } from "sonner"
-import { Input } from "@/components/ui/input"
-import { LocationUpdateEvent } from "@/components/admin/location-picker"
-
-interface LocationCoordinates {
-  lat: number;
-  lng: number;
-  address: string;
-}
+import type { LocationUpdateEvent } from "@/components/admin/location-picker"
 
 const statusColors = {
   pending: "bg-yellow-500",
@@ -39,11 +31,7 @@ const statusText = {
   exception: "Exception",
 }
 
-interface PageProps {
-  params: { id: string };
-  searchParams?: { [key: string]: string | string[] | undefined };
-}
-
+// Define the params as a Promise to match the expected type
 export default async function PackageDetailsPage({
   params,
 }: {
@@ -54,6 +42,7 @@ export default async function PackageDetailsPage({
 
   // Now use the id to fetch the package data
   const { package: packageData, success } = await getPackageById(id)
+
   if (!success || !packageData) {
     return (
       <div className="space-y-6 p-6">
@@ -113,8 +102,6 @@ export default async function PackageDetailsPage({
         </div>
       </div>
 
-      {/* Rest of the component remains the same */}
-
       <Tabs defaultValue="tracking">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="tracking">
@@ -158,9 +145,12 @@ export default async function PackageDetailsPage({
                   </p>
                   <DynamicLocationPicker
                     initialLocation={packageData.current_location}
-                    tracking_number={packageData.tracking_number} onLocationChange={function (location: LocationUpdateEvent): void {
-                      throw new Error("Function not implemented.")
-                    } }                  />
+                    tracking_number={packageData.tracking_number}
+                    onLocationChange={(location: LocationUpdateEvent): void => {
+                      // Implement your location change handler here
+                      console.log("Location updated:", location)
+                    }}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -175,26 +165,26 @@ export default async function PackageDetailsPage({
             </CardHeader>
             <CardContent>
               {timelineItems.length > 0 ? (
-            <div className="space-y-4">
-              {timelineItems.map((item:any, index:any) => (
-              <Card key={index} className="p-4">
-                <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-medium">{item.description}</h3>
-                  <p className="text-sm text-muted-foreground">{item.title}</p>
+                <div className="space-y-4">
+                  {timelineItems.map((item: any, index: number) => (
+                    <Card key={index} className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-medium">{item.description}</h3>
+                          <p className="text-sm text-muted-foreground">{item.title}</p>
+                        </div>
+                        <span
+                          className={`inline-block px-2 py-1 text-xs font-medium text-white rounded ${getStatusColor(
+                            item.status,
+                          )}`}
+                        >
+                          {getStatusDisplay(item.status)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2">{item.date}</p>
+                    </Card>
+                  ))}
                 </div>
-                <span
-                  className={`inline-block px-2 py-1 text-xs font-medium text-white rounded ${getStatusColor(
-                  item.status
-                  )}`}
-                >
-                  {getStatusDisplay(item.status)}
-                </span>
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">{item.date}</p>
-              </Card>
-              ))}
-            </div>
               ) : (
                 <div className="text-center p-6">
                   <p>No tracking history available yet.</p>

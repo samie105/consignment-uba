@@ -28,18 +28,29 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [colorPalette, setColorPaletteState] = useState<string>("green")
+  const [theme, setThemeState] = useState<string>("system")
 
-  // Load color palette from cookie on mount
+  // Load color palette and theme from cookies on mount
   useEffect(() => {
     const savedColorPalette = Cookies.get("colorPalette")
+    const savedTheme = Cookies.get("theme")
+    
     if (savedColorPalette) {
       setColorPaletteState(savedColorPalette)
       applyColorPalette(savedColorPalette)
     } else {
-      // Apply default green palette if no cookie exists
       applyColorPalette("green")
     }
+
+    if (savedTheme) {
+      setThemeState(savedTheme)
+    }
   }, [])
+
+  const setTheme = (newTheme: string) => {
+    setThemeState(newTheme)
+    Cookies.set("theme", newTheme, { expires: 365 })
+  }
 
   const setColorPalette = (color: string) => {
     setColorPaletteState(color)
@@ -107,8 +118,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   return (
     <ThemeProviderContext.Provider
       value={{
-        theme: "system",
-        setTheme: () => null,
+        theme,
+        setTheme,
         colorPalette,
         setColorPalette,
       }}
@@ -118,12 +129,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         defaultTheme="system"
         enableSystem
         disableTransitionOnChange
-        onValueChange={(theme) => {
-          // When theme changes, reapply color palette to adjust for dark/light mode
-          applyColorPalette(colorPalette)
-          // Save theme preference
-          Cookies.set("theme", theme || "system", { expires: 365 })
-        }}
+        forcedTheme={undefined}
       >
         {children}
       </NextThemesProvider>

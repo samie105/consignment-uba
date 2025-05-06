@@ -29,7 +29,7 @@ export default function LoginForm() {
 
       if (result.success) {
         toast.success("Login successful", {
-          description: `Welcome back, ${result.user.name}!`,
+          description: `Welcome back, ${result.user?.name || 'Admin'}!`,
         })
         router.push("/admin/dashboard")
         router.refresh()

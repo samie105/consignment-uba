@@ -62,7 +62,7 @@ export function ProtectedContent({
   encryptedContent: string
   encryptionKey?: string
   fallback?: React.ReactNode
-  as?: React.ElementType
+  as?: React.ElementType<{ className?: string; dangerouslySetInnerHTML?: { __html: string } }>
   className?: string
   [key: string]: any
 }) {
