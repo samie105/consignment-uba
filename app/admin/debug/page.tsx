@@ -78,7 +78,7 @@ export default function DebugPage() {
         throw error
       }
 
-      setSupabaseInfo((prev) => ({
+      setSupabaseInfo((prev: any) => ({
         ...prev,
         connected: true,
         message: "Successfully connected to Supabase!",
@@ -86,7 +86,7 @@ export default function DebugPage() {
     } catch (err: any) {
       console.error("Error checking Supabase connection:", err)
       setError(err.message || "Failed to check Supabase connection")
-      setSupabaseInfo((prev) => ({
+      setSupabaseInfo((prev: any) => ({
         ...prev,
         connected: false,
         error: err.message,

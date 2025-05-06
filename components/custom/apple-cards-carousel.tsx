@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useRef, useState, createContext, useContext } from "react"
+import React, { useEffect, useRef, useState, createContext, useContext, RefObject } from "react"
 import { ChevronLeft, ChevronRight, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AnimatePresence, motion } from "framer-motion"
@@ -166,7 +166,7 @@ export const Card = ({
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [open])
 
-  useOutsideClick(containerRef, () => handleClose())
+  useOutsideClick(containerRef as RefObject<HTMLDivElement>, () => handleClose())
 
   const handleOpen = () => {
     setOpen(true)

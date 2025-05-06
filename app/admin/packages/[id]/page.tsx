@@ -9,6 +9,7 @@ import DeletePackageButton from "@/components/admin/delete-package-button"
 import { DynamicLocationPicker, DynamicRealPackageMap } from "@/components/client/dynamic-imports"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
+import { LocationUpdateEvent } from "@/components/admin/location-picker"
 
 interface LocationCoordinates {
   lat: number;
@@ -38,9 +39,21 @@ const statusText = {
   exception: "Exception",
 }
 
-export default async function PackageDetailsPage({ params }: { params: { id: string } }) {
-  const { package: packageData, success } = await getPackageById( params.id)
+interface PageProps {
+  params: { id: string };
+  searchParams?: { [key: string]: string | string[] | undefined };
+}
 
+export default async function PackageDetailsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  // Await the params to get the id
+  const { id } = await params
+
+  // Now use the id to fetch the package data
+  const { package: packageData, success } = await getPackageById(id)
   if (!success || !packageData) {
     return (
       <div className="space-y-6 p-6">
@@ -145,8 +158,9 @@ export default async function PackageDetailsPage({ params }: { params: { id: str
                   </p>
                   <DynamicLocationPicker
                     initialLocation={packageData.current_location}
-                    tracking_number={packageData.tracking_number}
-                  />
+                    tracking_number={packageData.tracking_number} onLocationChange={function (location: LocationUpdateEvent): void {
+                      throw new Error("Function not implemented.")
+                    } }                  />
                 </div>
               </div>
             </CardContent>

@@ -37,13 +37,13 @@ export default function AdminSidebar({ className, user }: SidebarProps) {
       label: "Packages",
       icon: Package,
       href: "/admin/packages",
-      active: pathname.includes("/admin/packages") && !pathname.includes("/admin/packages/create"),
+      active: pathname?.includes("/admin/packages") && !pathname?.includes("/admin/packages/create"),
     },
     {
       label: "Settings",
       icon: Settings,
       href: "/admin/settings",
-      active: pathname.includes("/admin/settings"),
+      active: pathname?.includes("/admin/settings"),
     },
   ]
 

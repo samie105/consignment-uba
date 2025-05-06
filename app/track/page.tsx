@@ -12,9 +12,9 @@ type SearchParams = { [key: string]: string | string[] | undefined }
 export default async function TrackPage({
   searchParams,
 }: {
-  searchParams: SearchParams
+  searchParams: Promise<SearchParams>
 }) {
-  // Await searchParams as requested
+  // Await searchParams to get the actual values
   const params = await searchParams
 
   // Get tracking number from params

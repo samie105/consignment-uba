@@ -13,7 +13,7 @@ import { useEffect, useState } from "react"
 
 export default function EditPackagePage() {
   const params = useParams()
-  const  {id}  =  params
+  const id = params?.id as string
   const [packageData, setPackageData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
 

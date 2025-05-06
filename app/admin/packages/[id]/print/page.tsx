@@ -4,8 +4,15 @@ import { notFound } from "next/navigation"
 import { getPackageById } from "@/server/actions/packageActions"
 import Printclient from "@/components/printclient";
 
-export default async function PrintPackagePage({ params }: { params: { id: string } }) {
-  const { success, package: packageData, error } = await getPackageById(params.id);
+export default async function PrintPackagePage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  // Await the params to get the id
+  const { id } = await params
+
+  const { success, package: packageData, error } = await getPackageById(id);
 
 
   if (!success || !packageData) {
