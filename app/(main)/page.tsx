@@ -5,7 +5,6 @@ import Gallery from "@/components/gallery"
 import ShippingForm from "@/components/shipping-form"
 import Contact from "@/components/contact"
 import Faq from "@/components/faq"
-import Footer from "@/components/footer"
 import SpecializedServices from "@/components/specialized-services"
 import Metrics from "@/components/metrics"
 import Testimonials from "@/components/testimonials"
@@ -26,7 +25,6 @@ export default function Home() {
       <ShippingForm />
       <Contact />
       <Faq />
-      <Footer />
       <BackToTop />
     </main>
   )

@@ -22,8 +22,8 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <div className="flex flex-1">
+    <div className="min-h-screen">
+      <div className="flex">
         <AdminSidebar user={session} />
         <main className="flex-1 overflow-x-hidden pl-[70px]">
           <div className="container mx-auto py-6 px-4">{children}</div>

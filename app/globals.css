@@ -4,14 +4,17 @@
 
 @layer base {
   :root {
+    --primary-hue: 142;
+    --primary-rgb: 29, 133, 80;
+    
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
+    --primary: var(--primary-hue) 47.4% 50.2%;
+    --primary-foreground: var(--primary-hue) 47.4% 96%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
     --muted: 240 4.8% 95.9%;
@@ -22,7 +25,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --ring: var(--primary-hue) 47.4% 50.2%;
     --radius: 0.5rem;
     --font-sans: var(--font-manrope), system-ui, sans-serif;
   }
@@ -34,8 +37,8 @@
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
+    --primary: var(--primary-hue) 47.4% 55%;
+    --primary-foreground: var(--primary-hue) 47.4% 10%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
@@ -46,7 +49,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --ring: var(--primary-hue) 47.4% 55%;
   }
 }
 

@@ -12,50 +12,65 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { toast } from "sonner"
-import { createPackage } from "@/server/actions/packageActions"
-import { Package, User, UserCheck, ImageIcon, Clock, Plus, Trash, Upload } from "lucide-react"
-import { FileUpload } from "@/components/ui/file-upload"
+import { Switch } from "@/components/ui/switch"
 import { Card, CardContent } from "@/components/ui/card"
+import { toast } from "sonner"
+import { createPackage, generatetracking_number } from "@/server/actions/packageActions"
+import { CheckpointEditor } from "./checkpoint-editor"
+import { FileUpload } from "@/components/ui/file-upload"
+import { Package as LucidePackage, User, UserCheck, Clock, ImageIcon, FileText, Plus, Trash, Upload, LucideRefreshCw } from "lucide-react"
 import { v4 as uuidv4 } from "uuid"
-
-// Define the checkpoint type
-interface Checkpoint {
-  id: string
-  location: string
-  description: string
-  timestamp: string
-  status: string
-}
+import { Badge } from "@/components/ui/badge"
+import { isValidImageUrl } from "@/lib/utils"
+import type { Checkpoint } from "@/lib/supabase"
 
 // Define the form schema
 const formSchema = z.object({
-  status: z.string().default("pending"),
-  description: z.string().min(5, "Description must be at least 5 characters"),
-  weight: z.coerce.number().positive("Weight must be a positive number"),
+  tracking_number: z.string().min(1, "Tracking number is required"),
+  status: z.string().optional().default("pending"),
+  description: z.string().optional().default(""),
+  weight: z.coerce.number().optional().default(0),
   dimensions: z.object({
-    length: z.coerce.number().positive("Length must be a positive number"),
-    width: z.coerce.number().positive("Width must be a positive number"),
-    height: z.coerce.number().positive("Height must be a positive number"),
-  }),
+    length: z.coerce.number().optional().default(0),
+    width: z.coerce.number().optional().default(0),
+    height: z.coerce.number().optional().default(0),
+  }).optional().default({length: 0, width: 0, height: 0}),
   sender: z.object({
-    fullName: z.string().min(2, "Name must be at least 2 characters"),
-    email: z.string().email("Invalid email address"),
-    phone: z.string().min(5, "Phone number must be at least 5 characters"),
-    address: z.string().min(5, "Address must be at least 5 characters"),
-  }),
+    fullName: z.string().optional().default(""),
+    email: z.string().email("Invalid email format").optional().default(""),
+    phone: z.string().optional().default(""),
+    address: z.string().optional().default(""),
+  }).optional().default({fullName: "", email: "", phone: "", address: ""}),
   recipient: z.object({
-    fullName: z.string().min(2, "Name must be at least 2 characters"),
-    email: z.string().email("Invalid email address"),
-    phone: z.string().min(5, "Phone number must be at least 5 characters"),
-    address: z.string().min(5, "Address must be at least 5 characters"),
-  }),
+    fullName: z.string().optional().default(""),
+    email: z.string().email("Invalid email format").optional().default(""),
+    phone: z.string().optional().default(""),
+    address: z.string().optional().default(""),
+  }).optional().default({fullName: "", email: "", phone: "", address: ""}),
   payment: z.object({
-    amount: z.coerce.number().positive("Amount must be a positive number"),
-    isPaid: z.boolean().default(false),
-    method: z.string().optional(),
-  }),
-  images: z.array(z.string()).optional(),
+    amount: z.coerce.number().optional().default(0),
+    isPaid: z.boolean().optional().default(false),
+    method: z.string().optional().default("none"),
+    isVisible: z.boolean().default(true),
+  }).optional().default({amount: 0, isPaid: false, method: "none", isVisible: true}),
+  images: z.array(z.string()).optional().default([]),
+  pdfs: z.array(z.string()).optional().default([]),
+  checkpoints: z.array(z.object({
+    id: z.string(),
+    location: z.string().optional().default(""),
+    description: z.string().optional().default(""),
+    timestamp: z.string(),
+    status: z.string().optional().default("pending"),
+    coordinates: z.object({
+      latitude: z.number(),
+      longitude: z.number(),
+    }).optional(),
+    customTime: z.boolean().default(false),
+    customDate: z.boolean().default(false),
+  })).optional().default([]),
+  package_type: z.enum(['standard', 'express', 'priority', 'custom']).default('standard'),
+  date_shipped: z.string().optional(),
+  estimated_delivery_date: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -63,29 +78,20 @@ type FormValues = z.infer<typeof formSchema>
 export function CreatePackageForm() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([])
-  const [newCheckpoint, setNewCheckpoint] = useState({
-    location: "",
-    description: "",
-    status: "pending",
-  })
   const [images, setImages] = useState<string[]>([])
-  const [checkpointErrors, setCheckpointErrors] = useState({
-    location: false,
-    description: false,
-  })
+  const [pdfs, setPdfs] = useState<string[]>([])
 
-  // Initialize form with default values
-  const form = useForm<FormValues>({
+  const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      tracking_number: "",
       status: "pending",
       description: "",
-      weight: 1,
+      weight: 0,
       dimensions: {
-        length: 10,
-        width: 10,
-        height: 10,
+        length: 0,
+        width: 0,
+        height: 0,
       },
       sender: {
         fullName: "",
@@ -103,103 +109,57 @@ export function CreatePackageForm() {
         amount: 0,
         isPaid: false,
         method: "none",
+        isVisible: true,
       },
       images: [],
+      pdfs: [],
+      checkpoints: [],
+      package_type: "standard",
+      date_shipped: "",
+      estimated_delivery_date: "",
     },
   })
 
-  // Add a helper function to validate image URLs
-  const isValidImageUrl = (url: string | null | undefined): boolean => {
-    if (!url) return false
-    return typeof url === "string" && url.trim().length > 0
-  }
-
-  // Update the handleImagesUpload function
-  const handleImagesUpload = (files: string[]) => {
-    const validFiles = files.filter(isValidImageUrl)
-    setImages(validFiles)
-    form.setValue("images", validFiles)
-  }
-
-  // Function to add a new checkpoint
-  const addCheckpoint = () => {
-    // Validate checkpoint fields
-    const locationError = !newCheckpoint.location.trim()
-    const descriptionError = !newCheckpoint.description.trim()
-
-    setCheckpointErrors({
-      location: locationError,
-      description: descriptionError,
-    })
-
-    if (locationError || descriptionError) {
-      return
-    }
-
-    const checkpoint: Checkpoint = {
-      id: uuidv4(),
-      location: newCheckpoint.location,
-      description: newCheckpoint.description,
-      timestamp: new Date().toISOString(),
-      status: newCheckpoint.status,
-    }
-
-    setCheckpoints([...checkpoints, checkpoint])
-    setNewCheckpoint({
-      location: "",
-      description: "",
-      status: "pending",
-    })
-
-    toast.success("Checkpoint added", {
-      description: "The checkpoint has been added to the package.",
-    })
-  }
-
-  // Function to delete a checkpoint
-  const deleteCheckpoint = (id: string) => {
-    setCheckpoints(checkpoints.filter((checkpoint) => checkpoint.id !== id))
-    toast.success("Checkpoint removed")
-  }
-
-  async function onSubmit(data: FormValues) {
+  const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true)
     try {
-      // Include checkpoints with the package data
-      const packageData = {
-        ...data,
+      const result = await createPackage({
+        ...values,
         images,
-        checkpoints,
-      }
-
-      const result = await createPackage(packageData)
-
+        pdfs,
+      })
       if (result.success) {
-        toast.success("Package created", {
-          description: `Package created successfully with tracking number: ${result.tracking_number}`,
-        })
-        router.push(`/admin/packages/${result.tracking_number}`)
-        router.refresh()
+        toast.success("Package created successfully")
+        router.push("/admin/packages")
       } else {
-        toast.error("Error", {
-          description: result.error || "Failed to create package. Please try again.",
+        toast.error("Failed to create package", {
+          description: result.error,
         })
       }
     } catch (error) {
-      toast.error("Error", {
-        description: "An unexpected error occurred. Please try again.",
-      })
-      console.error("Package creation error:", error)
+      toast.error("An unexpected error occurred")
+      console.error("Error creating package:", error)
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  const handleImageUrlsChange = (files: string[]) => {
+    const validFiles = files.filter(isValidImageUrl)
+    setImages(validFiles)
+    form.setValue("images", validFiles)
+  }
+
+  const handleRandomizeTrackingNumber = async () => {
+    const trackingNumber = await generatetracking_number();
+    form.setValue("tracking_number", trackingNumber);
+  };
+
   return (
     <Tabs defaultValue="details" className="w-full">
       <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="details" className="flex items-center justify-center">
-          <Package className="h-4 w-4 mr-2 md:mr-2" />
+          <LucidePackage className="h-4 w-4 mr-2 md:mr-2" />
           <span className="hidden sm:inline">Package Details</span>
         </TabsTrigger>
         <TabsTrigger value="sender" className="flex items-center justify-center">
@@ -223,6 +183,35 @@ export function CreatePackageForm() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <TabsContent value="details" className="space-y-4 pt-4">
+            <div className="p-3 bg-muted/40 rounded-md text-sm mb-4">
+              <p className="text-muted-foreground">Only tracking number is required. All other fields are optional and can be filled later.</p>
+            </div>
+          
+            <div className="flex items-end gap-2">
+              <FormField
+                control={form.control}
+                name="tracking_number"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>Tracking Number <span className="text-destructive">*</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button 
+                type="button"
+                variant="outline"
+                className="mb-1"
+                onClick={handleRandomizeTrackingNumber}
+              >
+                <LucideRefreshCw className="h-4 w-4 mr-2" />
+                Generate
+              </Button>
+            </div>
+
             <FormField
               control={form.control}
               name="status"
@@ -327,6 +316,27 @@ export function CreatePackageForm() {
 
               <FormField
                 control={form.control}
+                name="payment.isVisible"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Payment Visibility</FormLabel>
+                      <FormDescription>
+                        Show or hide payment information in customer view
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="payment.amount"
                 render={({ field }) => (
                   <FormItem>
@@ -381,6 +391,60 @@ export function CreatePackageForm() {
                   )}
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="package_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Package Type</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select package type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="standard">Standard</SelectItem>
+                        <SelectItem value="express">Express</SelectItem>
+                        <SelectItem value="priority">Priority</SelectItem>
+                        <SelectItem value="custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="date_shipped"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date Shipped</FormLabel>
+                    <FormControl>
+                      <Input type="datetime-local" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="estimated_delivery_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estimated Delivery Date</FormLabel>
+                    <FormControl>
+                      <Input type="datetime-local" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
           </TabsContent>
 
@@ -505,126 +569,14 @@ export function CreatePackageForm() {
           </TabsContent>
 
           <TabsContent value="tracking" className="space-y-4 pt-4">
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Tracking History</h3>
-                <p className="text-sm text-muted-foreground">
-                  Add checkpoints to track the package's journey. You can add more checkpoints later.
-                </p>
-
-                {checkpoints.length > 0 ? (
-                  <div className="space-y-4">
-                    {checkpoints.map((checkpoint, index) => (
-                      <Card key={checkpoint.id}>
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start">
-                            <div className="space-y-1">
-                              <p className="font-medium">{checkpoint.location}</p>
-                              <p className="text-sm text-muted-foreground">{checkpoint.description}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(checkpoint.timestamp).toLocaleString()}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive"
-                              onClick={() => deleteCheckpoint(checkpoint.id)}
-                              title="Delete checkpoint"
-                            >
-                              <Trash className="h-4 w-4" />
-                              <span className="sr-only">Delete</span>
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center p-6 border rounded-lg bg-muted/20">
-                    <Clock className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-                    <h3 className="text-lg font-medium mb-1">No Checkpoints Yet</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Tracking information will be updated once the shipment begins.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-4 border rounded-lg p-4">
-                <h3 className="text-lg font-medium">Add New Checkpoint</h3>
-                <p className="text-sm text-muted-foreground">
-                  Add a new checkpoint to track the package's journey. This is optional and can be added later.
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="checkpoint-location" className="block text-sm font-medium">
-                      Location
-                    </label>
-                    <Input
-                      id="checkpoint-location"
-                      placeholder="e.g., Sorting Facility, New York"
-                      value={newCheckpoint.location}
-                      onChange={(e) => {
-                        setNewCheckpoint({ ...newCheckpoint, location: e.target.value })
-                        if (e.target.value.trim()) {
-                          setCheckpointErrors({ ...checkpointErrors, location: false })
-                        }
-                      }}
-                      className={checkpointErrors.location ? "border-destructive" : ""}
-                    />
-                    {checkpointErrors.location && <p className="text-sm text-destructive mt-1">Location is required</p>}
-                  </div>
-
-                  <div>
-                    <label htmlFor="checkpoint-status" className="block text-sm font-medium">
-                      Status
-                    </label>
-                    <select
-                      id="checkpoint-status"
-                      value={newCheckpoint.status}
-                      onChange={(e) => setNewCheckpoint({ ...newCheckpoint, status: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-md"
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="in_warehouse">In Warehouse</option>
-                      <option value="in_transit">In Transit</option>
-                      <option value="arrived">Arrived</option>
-                      <option value="customs_check">Customs Check</option>
-                      <option value="customs_hold">Customs Clearance (ON HOLD)</option>
-                      <option value="delivered">Delivered</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="checkpoint-description" className="block text-sm font-medium">
-                    Description
-                  </label>
-                  <Textarea
-                    id="checkpoint-description"
-                    placeholder="e.g., Package received at sorting facility"
-                    value={newCheckpoint.description}
-                    onChange={(e) => {
-                      setNewCheckpoint({ ...newCheckpoint, description: e.target.value })
-                      if (e.target.value.trim()) {
-                        setCheckpointErrors({ ...checkpointErrors, description: false })
-                      }
-                    }}
-                    className={checkpointErrors.description ? "border-destructive" : ""}
-                  />
-                  {checkpointErrors.description && (
-                    <p className="text-sm text-destructive mt-1">Description is required</p>
-                  )}
-                </div>
-
-                <Button onClick={addCheckpoint} className="w-full">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Checkpoint
-                </Button>
-              </div>
-            </div>
+            <CheckpointEditor
+              tracking_number={form.getValues("tracking_number")}
+              initialCheckpoints={[]}
+              onCheckpointAdded={() => {
+                form.setValue("checkpoints", form.getValues("checkpoints") || [])
+              }}
+              allowCustomTime={true}
+            />
           </TabsContent>
 
           <TabsContent value="images" className="space-y-4 pt-4">
@@ -636,7 +588,7 @@ export function CreatePackageForm() {
               </p>
 
               {images.length > 0 ? (
-                <FileUpload onUpload={handleImagesUpload} initialFiles={images} maxFiles={5} />
+                <FileUpload onUpload={handleImageUrlsChange} initialFiles={images} maxFiles={5} />
               ) : (
                 <div className="text-center p-6 border rounded-lg bg-muted/20 mb-4">
                   <ImageIcon className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
@@ -655,7 +607,7 @@ export function CreatePackageForm() {
                 </div>
               )}
 
-              {images.length === 0 && <FileUpload onUpload={handleImagesUpload} initialFiles={images} maxFiles={5} />}
+              {images.length === 0 && <FileUpload onUpload={handleImageUrlsChange} initialFiles={images} maxFiles={5} />}
             </div>
           </TabsContent>
 

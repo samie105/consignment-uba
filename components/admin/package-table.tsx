@@ -12,17 +12,79 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { MoreHorizontal, Printer, Pencil, Trash, Eye } from "lucide-react"
+import { MoreHorizontal, Pencil, Trash, Eye, Copy, FileDown } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { deletePackage } from "@/server/actions/packageActions"
 import { Package } from "@/types/package"
+import ExportPDFButton from "@/components/export-pdf-button"
+import { PackageData } from "@/types"
 
 interface PackageTableProps {
   packages: Package[]
   simplified?: boolean
 }
+
+// Helper function to adapt Package to PackageData for the PDF export
+const adaptPackageForPDF = (pkg: Package): PackageData => {
+  return {
+    id: pkg.tracking_number,
+    tracking_number: pkg.tracking_number,
+    status: pkg.status,
+    statusText: getStatusText(pkg.status),
+    description: pkg.description,
+    weight: pkg.weight.toString(),
+    dimensions: pkg.dimensions,
+    sender: {
+      ...pkg.sender,
+      name: pkg.sender.fullName
+    },
+    recipient: {
+      ...pkg.recipient,
+      name: pkg.recipient.fullName
+    },
+    payment: {
+      ...pkg.payment,
+      currency: 'USD',
+      status: pkg.payment.isPaid ? 'Paid' : 'Unpaid'
+    },
+    current_location: pkg.current_location,
+    images: pkg.images || [],
+    pdfs: pkg.pdfs || [],
+    checkpoints: pkg.checkpoints.map(cp => ({
+      ...cp,
+      coordinates: cp.coordinates ? {
+        lat: cp.coordinates.latitude,
+        lng: cp.coordinates.longitude
+      } : undefined
+    })),
+    created_at: pkg.created_at,
+    updated_at: pkg.updated_at,
+    admin_id: pkg.admin_id,
+    package_type: pkg.package_type || 'standard',
+    date_shipped: pkg.date_shipped || new Date().toISOString(),
+    ship_date: pkg.date_shipped || new Date().toISOString(),
+    estimated_delivery_date: pkg.estimated_delivery_date || '',
+    show_payment_section: pkg.payment.isVisible || false,
+    payment_visibility: pkg.payment.isVisible || false
+  }
+}
+
+// Helper function to format status text
+const getStatusText = (status: string): string => {
+  switch (status) {
+    case "in_warehouse": return "In Warehouse";
+    case "in_transit": return "In Transit";
+    case "arrived": return "Arrived";
+    case "customs_check": return "Customs Check";
+    case "customs_hold": return "Customs Clearance (ON HOLD)";
+    case "delivered": return "Delivered";
+    case "pending": return "Pending";
+    case "exception": return "Exception";
+    default: return status.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+  }
+};
 
 export function PackageTable({ packages, simplified = false }: PackageTableProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -62,8 +124,15 @@ export function PackageTable({ packages, simplified = false }: PackageTableProps
     }
   }
 
-  const handlePrintReceipt = (pkg: Package) => {
-    router.push(`/admin/packages/${pkg.tracking_number}/print`)
+  const handleCopyTrackingNumber = (trackingNumber: string) => {
+    navigator.clipboard.writeText(trackingNumber)
+      .then(() => {
+        toast.success("Tracking number copied to clipboard")
+      })
+      .catch((error) => {
+        console.error("Failed to copy tracking number", error)
+        toast.error("Failed to copy tracking number")
+      })
   }
 
   return (
@@ -84,9 +153,20 @@ export function PackageTable({ packages, simplified = false }: PackageTableProps
               packages.map((pkg) => (
                 <TableRow key={pkg.tracking_number}>
                   <TableCell className="font-medium">
-                    <Link href={`/admin/packages/${pkg.tracking_number}`} className="hover:underline">
-                      {pkg.tracking_number}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/admin/packages/${pkg.tracking_number}`} className="hover:underline">
+                        {pkg.tracking_number}
+                      </Link>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6" 
+                        onClick={() => handleCopyTrackingNumber(pkg.tracking_number)}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        <span className="sr-only">Copy tracking number</span>
+                      </Button>
+                    </div>
                   </TableCell>
                   <TableCell>{pkg.sender.fullName}</TableCell>
                   <TableCell>{pkg.recipient.fullName}</TableCell>
@@ -104,38 +184,40 @@ export function PackageTable({ packages, simplified = false }: PackageTableProps
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/admin/packages/${pkg.tracking_number}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/admin/packages/${pkg.tracking_number}/edit`}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/admin/packages/${pkg.tracking_number}/print`}>
-                            <Printer className="mr-2 h-4 w-4" />
-                            Print Receipt
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDelete(pkg)} className="text-red-600 focus:text-red-600">
-                          <Trash className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex justify-end items-center space-x-1">
+                      <ExportPDFButton packageData={adaptPackageForPDF(pkg)} />
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/admin/packages/${pkg.tracking_number}`}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/admin/packages/${pkg.tracking_number}/edit`}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleCopyTrackingNumber(pkg.tracking_number)}>
+                            <Copy className="mr-2 h-4 w-4" />
+                            Copy Tracking #
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(pkg)} className="text-red-600 focus:text-red-600">
+                            <Trash className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

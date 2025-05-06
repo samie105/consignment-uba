@@ -1,6 +1,6 @@
 import type React from "react"
-import Header from "@/components/header"
-import Footer from "@/components/footer"
+// Remove Header import
+// import Header from "@/components/header"
 
 export default function MainLayout({
   children,
@@ -9,9 +9,8 @@ export default function MainLayout({
 }) {
   return (
     <>
-      <Header />
+      {/* Remove Header component */}
       <main className="min-h-screen">{children}</main>
-      <Footer />
     </>
   )
 }

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { X, Truck, Plane, Ship, Package, Clock, Shield, Warehouse, Globe } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { ShootingStars } from "@/components/ui/shooting-stars"
 import { StarsBackground } from "@/components/ui/stars-background"
 
@@ -146,7 +146,8 @@ export default function Gallery() {
 
           {/* Operation selector tabs - swipeable on mobile */}
           <div className="relative w-full mb-8">
-            <ScrollArea className="w-full pb-4" orientation="horizontal" scrollHideDelay={0}>
+            <ScrollArea className="w-full pb-4">
+              <ScrollBar orientation="horizontal" />
               <div
                 id="operation-tabs"
                 className="flex space-x-2 touch-pan-x overflow-x-auto scrollbar-hide sm:snap-none snap-x snap-mandatory"
@@ -166,7 +167,7 @@ export default function Gallery() {
                     key={index}
                     variant={selectedOperation === index ? "default" : "outline"}
                     onClick={() => setSelectedOperation(index)}
-                    className="whitespace-nowrap flex-shrink-0 sm:snap-align-none snap-center min-w-[150px]"
+                    className="whitespace-nowrap flex-shrink-0 sm:snap-align-none snap-center min-w-[200px] md:min-w-[250px] text-sm md:text-base"
                   >
                     {operation.title}
                   </Button>

@@ -22,12 +22,13 @@ export interface LocationPickerRef {
 }
 
 interface LocationPickerProps {
+  onLocationChange: (location: LocationUpdateEvent) => void
   initialLocation?: {
     latitude: number
     longitude: number
+    address?: string
   }
   tracking_number?: string
-  onLocationChange?: (location: LocationUpdateEvent) => void
 }
 
 const LocationPicker = forwardRef<LocationPickerRef, LocationPickerProps>(
@@ -39,8 +40,13 @@ const LocationPicker = forwardRef<LocationPickerRef, LocationPickerProps>(
     const [isMapInitialized, setIsMapInitialized] = useState(false)
     const [currentLocation, setCurrentLocation] = useState<LocationUpdateEvent | null>(null)
     const [isUpdating, setIsUpdating] = useState(false)
-    const [address, setAddress] = useState("")
+    const [address, setAddress] = useState(initialLocation?.address || "")
     const [isGeocoding, setIsGeocoding] = useState(false)
+    const [coordinates, setCoordinates] = useState<[number, number]>(
+      initialLocation?.latitude && initialLocation?.longitude
+        ? [initialLocation.latitude, initialLocation.longitude]
+        : [0, 0] // Default coordinates
+    )
 
     const getCoordinatesFromAddress = async (address: string) => {
       try {

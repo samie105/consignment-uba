@@ -19,19 +19,19 @@ interface Checkpoint {
   coordinates: Coordinates
 }
 
-interface PackageData {
+interface MapPackageData {
   tracking_number: string
   status: string
   statusText: string
   current_location: {
+    address: string
     latitude: number
     longitude: number
-    address: string
   }
 }
 
 interface RealPackageMapProps {
-  packageData: PackageData
+  packageData: MapPackageData
   checkpoints?: Checkpoint[]
   height?: string
   showCheckpoints?: boolean

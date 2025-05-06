@@ -10,11 +10,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { addCheckpoint, deleteCheckpoint, updateCheckpoint } from "@/server/actions/packageActions"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MapPin, Plus, Trash, Edit, X } from "lucide-react"
+import { MapPin, Plus, Trash, Edit, X, Calendar, Clock } from "lucide-react"
 import dynamic from "next/dynamic"
+import { format, setHours, setMinutes } from "date-fns"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
 
 // Dynamically import the map component to avoid SSR issues with Leaflet
 const LocationPicker = dynamic(() => import("@/components/admin/location-picker"), {
@@ -25,48 +30,56 @@ const LocationPicker = dynamic(() => import("@/components/admin/location-picker"
 interface CheckpointEditorProps {
   tracking_number: string
   onCheckpointAdded?: () => void
+  allowCustomTime?: boolean
   initialCheckpoints?: Array<{
     id: string
     location: string
     description: string
     status: string
-    coordinates?: { lat: number; lng: number } | null
     timestamp: string
+    customTime?: boolean
+    customDate?: boolean
   }>
 }
 
-export function CheckpointEditor({ tracking_number, onCheckpointAdded, initialCheckpoints = [] }: CheckpointEditorProps) {
+export function CheckpointEditor({
+  tracking_number,
+  onCheckpointAdded,
+  allowCustomTime = false,
+  initialCheckpoints = []
+}: CheckpointEditorProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showMap, setShowMap] = useState(false)
   const locationPickerRef = useRef<LocationPickerRef>(null)
   const [editMode, setEditMode] = useState<string | null>(null)
   const [checkpoints, setCheckpoints] = useState(initialCheckpoints)
+  const [useCustomDate, setUseCustomDate] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
+  const [selectedTime, setSelectedTime] = useState<string>("12:00")
+  const [isAM, setIsAM] = useState<boolean>(true)
 
   const [checkpoint, setCheckpoint] = useState({
     location: "",
     description: "",
     status: "in_transit",
-    coordinates: null as { lat: number; lng: number } | null,
-    address: "",
+    customTime: false,
+    customDate: false,
   })
+
   const [errors, setErrors] = useState({
     location: false,
     description: false,
-    coordinates: false,
   })
 
   const handleLocationChange = (location: LocationUpdateEvent) => {
     setCheckpoint(prev => ({
       ...prev,
-      location: location.address,
-      coordinates: { lat: location.lat, lng: location.lng },
-      address: location.address
+      location: location.address
     }))
     setErrors(prev => ({
       ...prev,
-      location: false,
-      coordinates: false
+      location: false
     }))
   }
 
@@ -91,11 +104,14 @@ export function CheckpointEditor({ tracking_number, onCheckpointAdded, initialCh
         location: checkpointToEdit.location,
         description: checkpointToEdit.description,
         status: checkpointToEdit.status,
-        coordinates: checkpointToEdit.coordinates || null,
-        address: checkpointToEdit.location,
+        customTime: checkpointToEdit.customTime || false,
+        customDate: checkpointToEdit.customDate || false,
       })
       setEditMode(id)
-      setShowMap(true)
+      if (checkpointToEdit.customDate) {
+        setSelectedDate(new Date(checkpointToEdit.timestamp))
+        setUseCustomDate(true)
+      }
     }
   }
 
@@ -104,40 +120,35 @@ export function CheckpointEditor({ tracking_number, onCheckpointAdded, initialCh
       e.preventDefault()
     }
 
-    // Get location from the map if it's shown
-    if (showMap) {
-      const location = await locationPickerRef.current?.getLocation()
-      if (location) {
-        setCheckpoint(prev => ({
-          ...prev,
-          location: location.address,
-          coordinates: { lat: location.lat, lng: location.lng },
-          address: location.address
-        }))
-      }
-    }
-
     // Validate fields
     const locationError = !checkpoint.location.trim()
     const descriptionError = !checkpoint.description.trim()
-    const coordinatesError = showMap && !checkpoint.coordinates
 
     setErrors({
       location: locationError,
       description: descriptionError,
-      coordinates: coordinatesError,
     })
 
-    if (locationError || descriptionError || coordinatesError) {
+    if (locationError || descriptionError) {
+      toast.error("Please fill in all required fields")
       return
     }
 
     setIsSubmitting(true)
 
     try {
+      let timestamp = new Date()
+      if (useCustomDate && selectedDate) {
+        const [hours, minutes] = selectedTime.split(":").map(Number)
+        const adjustedHours = isAM ? hours : hours + 12
+        timestamp = setMinutes(setHours(selectedDate, adjustedHours), minutes)
+      }
+
       const checkpointData = {
         ...checkpoint,
-        timestamp: new Date().toISOString(),
+        timestamp: timestamp.toISOString(),
+        customTime: useCustomDate,
+        customDate: useCustomDate,
       }
 
       let result;
@@ -149,10 +160,10 @@ export function CheckpointEditor({ tracking_number, onCheckpointAdded, initialCh
               ? { ...cp, ...checkpointData, id: editMode }
               : cp
           ))
-          toast.success("Checkpoint updated", {
-            description: "The checkpoint has been updated successfully."
-          })
+          toast.success("Checkpoint updated successfully")
           setEditMode(null)
+        } else {
+          throw new Error(result.error || "Failed to update checkpoint")
         }
       } else {
         result = await addCheckpoint(tracking_number, checkpointData)
@@ -162,35 +173,32 @@ export function CheckpointEditor({ tracking_number, onCheckpointAdded, initialCh
             id: (result as any).checkpoint?.id || crypto.randomUUID()
           }
           setCheckpoints(prev => [...prev, newCheckpoint])
-          toast.success("Checkpoint added", {
-            description: "The checkpoint has been added to the package."
-          })
+          toast.success("Checkpoint added successfully")
+        } else {
+          throw new Error(result.error || "Failed to add checkpoint")
         }
       }
 
-      if (result.success) {
-        // Reset form
-        setCheckpoint({
-          location: "",
-          description: "",
-          status: "in_transit",
-          coordinates: null,
-          address: "",
-        })
-        setShowMap(false)
+      // Reset form
+      setCheckpoint({
+        location: "",
+        description: "",
+        status: "in_transit",
+        customTime: false,
+        customDate: false,
+      })
+      setUseCustomDate(false)
+      setSelectedDate(new Date())
+      setSelectedTime("12:00")
+      setIsAM(true)
+      setShowMap(false)
 
-        if (onCheckpointAdded) {
-          onCheckpointAdded()
-        }
-      } else {
-        toast.error("Error", {
-          description: result.error || `Failed to ${editMode ? 'update' : 'add'} checkpoint. Please try again.`,
-        })
+      if (onCheckpointAdded) {
+        onCheckpointAdded()
       }
     } catch (error) {
-      toast.error("Error", {
-        description: "An unexpected error occurred. Please try again.",
-      })
+      console.error("Error submitting checkpoint:", error)
+      toast.error(error instanceof Error ? error.message : "An unexpected error occurred")
     } finally {
       setIsSubmitting(false)
     }
@@ -211,28 +219,45 @@ export function CheckpointEditor({ tracking_number, onCheckpointAdded, initialCh
               <label htmlFor="location" className="block text-sm font-medium">
                 Location
               </label>
-              <Input
-                id="location"
-                placeholder="e.g., Sorting Facility, New York"
-                value={checkpoint.location}
-                onChange={(e) => {
-                  const location = e.target.value
-                  setCheckpoint(prev => ({
-                    ...prev,
-                    location,
-                    address: location
-                  }))
-                  if (location.trim()) {
-                    setErrors(prev => ({
+              <div className="flex gap-2">
+                <Input
+                  id="location"
+                  placeholder="e.g., Sorting Facility, New York"
+                  value={checkpoint.location}
+                  onChange={(e) => {
+                    const location = e.target.value
+                    setCheckpoint(prev => ({
                       ...prev,
-                      location: false
+                      location
                     }))
-                  }
-                }}
-                className={errors.location ? "border-destructive" : ""}
-              />
+                    if (location.trim()) {
+                      setErrors(prev => ({
+                        ...prev,
+                        location: false
+                      }))
+                    }
+                  }}
+                  className={errors.location ? "border-destructive" : ""}
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setShowMap(!showMap)}
+                >
+                  <MapPin className="h-4 w-4" />
+                </Button>
+              </div>
               {errors.location && <p className="text-sm text-destructive mt-1">Location is required</p>}
             </div>
+
+            {showMap && (
+              <div className="rounded-md overflow-hidden border">
+                <LocationPicker 
+                  ref={locationPickerRef}
+                  onLocationChange={handleLocationChange}
+                />
+              </div>
+            )}
 
             <div>
               <label htmlFor="description" className="block text-sm font-medium">
@@ -277,33 +302,87 @@ export function CheckpointEditor({ tracking_number, onCheckpointAdded, initialCh
               </Select>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <Button type="button" variant="outline" className="w-full" onClick={() => setShowMap(!showMap)}>
-                  <MapPin className="mr-2 h-4 w-4" />
-                  {showMap ? "Hide Map" : "Set Location on Map"}
-                </Button>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="custom-date"
+                  checked={useCustomDate}
+                  onCheckedChange={setUseCustomDate}
+                />
+                <label htmlFor="custom-date" className="text-sm font-medium">
+                  Use custom date and time
+                </label>
               </div>
-
-              {showMap && (
-                <div className="pt-2">
-                  <p className="text-sm text-muted-foreground mb-2">Click on the map to set the checkpoint location</p>
-                  <div className="rounded-md overflow-hidden border">
-                    <LocationPicker 
-                      ref={locationPickerRef}
-                      initialLocation={checkpoint.coordinates ? {
-                        latitude: checkpoint.coordinates.lat,
-                        longitude: checkpoint.coordinates.lng
-                      } : undefined}
-                      onLocationChange={handleLocationChange}
-                    />
-                  </div>
-                  {errors.coordinates && (
-                    <p className="text-sm text-destructive mt-1">Location coordinates are required</p>
-                  )}
-                </div>
+              {!useCustomDate && (
+                <p className="text-sm text-muted-foreground">
+                  Date and time will be set automatically to current time
+                </p>
               )}
             </div>
+
+            {useCustomDate && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Select Date
+                  </label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !selectedDate && "text-muted-foreground"
+                        )}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <CalendarComponent
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Select Time
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="time"
+                        value={selectedTime}
+                        onChange={(e) => setSelectedTime(e.target.value)}
+                        className="w-full"
+                      />
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant={isAM ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setIsAM(true)}
+                        >
+                          AM
+                        </Button>
+                        <Button
+                          variant={!isAM ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setIsAM(false)}
+                        >
+                          PM
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-2">
               {editMode && (
@@ -317,9 +396,13 @@ export function CheckpointEditor({ tracking_number, onCheckpointAdded, initialCh
                       location: "",
                       description: "",
                       status: "in_transit",
-                      coordinates: null,
-                      address: "",
+                      customTime: false,
+                      customDate: false,
                     })
+                    setUseCustomDate(false)
+                    setSelectedDate(new Date())
+                    setSelectedTime("12:00")
+                    setIsAM(true)
                     setShowMap(false)
                   }}
                 >

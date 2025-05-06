@@ -68,7 +68,7 @@ export async function login(formData: FormData) {
     // Set a cookie with the user data
     try {
       console.log("Initializing cookie store")
-      const cookieStore = await cookies()
+    const cookieStore = await cookies()
       console.log("Cookie store initialized")
 
       const cookieData = {

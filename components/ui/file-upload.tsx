@@ -14,7 +14,8 @@ interface FileUploadProps {
   onUpload: (files: string[]) => void
   initialFiles?: string[]
   maxFiles?: number
-  accept?: string
+  acceptedFileTypes?: string
+  maxSize?: number
 }
 
 // Add a helper function to validate image URLs
@@ -23,7 +24,13 @@ const isValidImageUrl = (url: string | null | undefined): boolean => {
   return typeof url === "string" && url.trim().length > 0
 }
 
-export function FileUpload({ onUpload, initialFiles = [], maxFiles = 5, accept = "image/*" }: FileUploadProps) {
+export function FileUpload({
+  onUpload,
+  initialFiles = [],
+  maxFiles = 5,
+  acceptedFileTypes,
+  maxSize = 5 * 1024 * 1024, // Default 5MB
+}: FileUploadProps) {
   // Filter out any empty strings from initialFiles
   const filteredInitialFiles = initialFiles.filter((file) => file && file.trim() !== "")
   const [files, setFiles] = useState<string[]>(filteredInitialFiles)
@@ -189,7 +196,7 @@ export function FileUpload({ onUpload, initialFiles = [], maxFiles = 5, accept =
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept={accept}
+        accept={acceptedFileTypes}
         className="hidden"
         multiple={files.length < maxFiles}
         disabled={uploading || !!error}
