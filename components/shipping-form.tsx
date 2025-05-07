@@ -13,9 +13,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { toast } from "@/hooks/use-toast"
 import { createPackage, generatetracking_number } from "@/server/actions/packageActions"
-import { render } from "@react-email/render"
-import { ShippingNotificationEmail } from "@/emails/shipping-notification"
 import type { Package } from "@/types/package"
+import { v4 as uuidv4 } from "uuid"
 
 export default function ShippingForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -60,44 +59,41 @@ export default function ShippingForm() {
       const [length, width, height] = formData.dimensions.split("x").map((d) => parseFloat(d.trim()))
 
       // Create package data
-      const packageData: Package = {
+      const packageData = {
+        id: uuidv4(),
         tracking_number,
         status: "pending",
-        package_type: formData.packageType as "standard" | "express" | "priority" | "custom",
+        description: formData.specialInstructions,
         weight: parseFloat(formData.weight),
         dimensions: {
           length,
           width,
           height,
         },
-        description: formData.specialInstructions,
         sender: {
-          fullName: formData.senderName,
+          full_name: formData.senderName,
           email: formData.senderEmail,
           phone: formData.senderPhone,
           address: formData.senderAddress,
         },
         recipient: {
-          fullName: formData.recipientName,
+          full_name: formData.recipientName,
           email: formData.recipientEmail,
           phone: formData.recipientPhone,
           address: formData.recipientAddress,
         },
-        checkpoints: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
         payment: {
           amount: 0,
-          isPaid: false,
+          is_paid: false,
           method: "Credit Card",
-          isVisible: true,
         },
         current_location: {
-          latitude: 0,
-          longitude: 0,
+          lat: 0,
+          lng: 0,
           address: "",
         },
-        admin_id: "",
+        created_at: new Date().toISOString(),
+        package_type: formData.packageType as "standard" | "express" | "priority" | "custom",
       }
 
       // Create package in database
@@ -107,34 +103,32 @@ export default function ShippingForm() {
         throw new Error(result.error || "Failed to create package")
       }
 
-      // Generate email HTML
-      const emailHtml = render(
-        ShippingNotificationEmail({
-          package: packageData,
-          trackingUrl: `${process.env.NEXT_PUBLIC_APP_URL}/track?tracking=${tracking_number}`,
-        })
-      )
-
-      // Send email notification
-      const emailResponse = await fetch("/api/send-email", {
+      // Send detailed email to admin only
+      const adminEmailResponse = await fetch("/api/send-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           to: "samsonrichfield@gmail.com",
-          subject: `New Shipping Request - Tracking #${tracking_number}`,
-          html: emailHtml,
+          subject: `New Shipping Request - ${tracking_number}`,
+          isAdmin: true,
+          packageData,
+          formData
         }),
       })
 
-      if (!emailResponse.ok) {
-        throw new Error("Failed to send email notification")
+      if (!adminEmailResponse.ok) {
+        const errorData = await adminEmailResponse.json()
+        console.error("Admin email error details:", errorData)
+        throw new Error(errorData.error || "Failed to send email notification to admin")
       }
+
+      console.log("Admin email sent successfully")
 
       toast({
         title: "Shipping request submitted",
-        description: `Your tracking number is: ${tracking_number}`,
+        description: "Your request has been received and we'll contact you shortly.",
       })
 
       // Reset form
@@ -157,7 +151,7 @@ export default function ShippingForm() {
       console.error("Error submitting form:", error)
       toast({
         title: "Error",
-        description: "Failed to submit shipping request. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to submit shipping request. Please try again.",
         variant: "destructive",
       })
     } finally {

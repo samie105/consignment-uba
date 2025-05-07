@@ -135,19 +135,55 @@ export async function updatePackage(tracking_number: string, packageData: any) {
   try {
     const supabase = createClient()
     
-    const { data, error } = await supabase
-      .from("packages")
-      .update(packageData)
-      .eq("tracking_number", tracking_number)
-      .select()
-      .single()
+    // Check if tracking number is being updated
+    const isTrackingNumberChanged = 
+      packageData.tracking_number && 
+      packageData.tracking_number !== tracking_number
+    
+    if (isTrackingNumberChanged) {
+      console.log(`Updating tracking number from ${tracking_number} to ${packageData.tracking_number}`)
+      
+      // We need to create a new record with the new tracking number and delete the old one
+      // First, create a new record with the new tracking number
+      const { data: newData, error: createError } = await supabase
+        .from("packages")
+        .insert([packageData])
+        .select()
+        .single()
+      
+      if (createError) {
+        console.error("Error creating package with new tracking number:", createError)
+        return { success: false, error: createError.message }
+      }
+      
+      // Then delete the old record
+      const { error: deleteError } = await supabase
+        .from("packages")
+        .delete()
+        .eq("tracking_number", tracking_number)
+      
+      if (deleteError) {
+        console.error("Error deleting package with old tracking number:", deleteError)
+        return { success: false, error: deleteError.message }
+      }
+      
+      return { success: true, data: newData }
+    } else {
+      // Regular update without tracking number change
+      const { data, error } = await supabase
+        .from("packages")
+        .update(packageData)
+        .eq("tracking_number", tracking_number)
+        .select()
+        .single()
 
-    if (error) {
-      console.error("Error updating package:", error)
-      return { success: false, error: error.message }
+      if (error) {
+        console.error("Error updating package:", error)
+        return { success: false, error: error.message }
+      }
+
+      return { success: true, data }
     }
-
-    return { success: true, data }
   } catch (error) {
     console.error("Error updating package:", error)
     return { success: false, error: "Failed to update package" }

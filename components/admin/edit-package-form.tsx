@@ -29,6 +29,7 @@ import { DocumentsSection } from "./documents-section"
 
 // Define the form schema
 const formSchema = z.object({
+  tracking_number: z.string().optional(),
   status: z.string().optional(),
   description: z.string().optional(),
   weight: z.coerce.number().optional(),
@@ -92,6 +93,7 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      tracking_number: packageData.tracking_number,
       status: packageData.status,
       description: packageData.description,
       weight: packageData.weight,
@@ -119,11 +121,14 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
     console.log("submitting")
     setIsSubmitting(true)
     try {
+      // Get the original and new tracking numbers
+      const originalTrackingNumber = packageData.tracking_number
+      const newTrackingNumber = values.tracking_number || originalTrackingNumber
+      
       console.log("Saving package with values:", {
         ...values,
         images,
         pdfs,
-        tracking_number: packageData.tracking_number 
       })
       
       // Create a copy of the values so we don't modify the form values directly
@@ -131,10 +136,9 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
         ...values,
         images,
         pdfs,
-        tracking_number: packageData.tracking_number
       }
       
-      const updateResult = await updatePackage(packageData.tracking_number, dataToSave)
+      const updateResult = await updatePackage(originalTrackingNumber, dataToSave)
       
       console.log("Update result:", updateResult)
       
@@ -183,6 +187,20 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
         <Form {...form}>
           <form className="space-y-6">
             <TabsContent value="details" className="space-y-4 pt-4">
+              <FormField
+                control={form.control}
+                name="tracking_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tracking Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="status"
