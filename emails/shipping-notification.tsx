@@ -36,7 +36,7 @@ export function ShippingNotificationEmail({
             alt="DeliveryOne"
             style={logo}
           />
-          <Heading style={h1}>New Shipping Request</Heading>
+          <Heading style={h1}>New Shipping Request Details</Heading>
           
           <Section style={section}>
             <Text style={text}>
@@ -44,50 +44,47 @@ export function ShippingNotificationEmail({
             </Text>
 
             <Section style={box}>
-              <Text style={label}>Tracking Number:</Text>
-              <Text style={value}>{pkg.tracking_number}</Text>
-
-              <Text style={label}>Package Type:</Text>
-              <Text style={value}>{pkg.package_type}</Text>
-
-              <Text style={label}>Weight:</Text>
-              <Text style={value}>{pkg.weight} kg</Text>
-
-              <Text style={label}>Dimensions:</Text>
-              <Text style={value}>
-                {pkg.dimensions.length} x {pkg.dimensions.width} x {pkg.dimensions.height} cm
+              <Text style={subheading}>Package Information</Text>
+              <Text style={text}>
+                <strong>Tracking Number:</strong> {pkg.tracking_number}
+                <br />
+                <strong>Package Type:</strong> {pkg.package_type}
+                <br />
+                <strong>Weight:</strong> {pkg.weight} kg
+                <br />
+                <strong>Dimensions:</strong> {pkg.dimensions.length} x {pkg.dimensions.width} x {pkg.dimensions.height} cm
               </Text>
             </Section>
 
             <Section style={box}>
               <Text style={subheading}>Sender Information</Text>
               <Text style={text}>
-                {pkg.sender.fullName}
+                <strong>Name:</strong> {pkg.sender.fullName}
                 <br />
-                {pkg.sender.email}
+                <strong>Email:</strong> {pkg.sender.email}
                 <br />
-                {pkg.sender.phone}
+                <strong>Phone:</strong> {pkg.sender.phone}
                 <br />
-                {pkg.sender.address}
+                <strong>Address:</strong> {pkg.sender.address}
               </Text>
             </Section>
 
             <Section style={box}>
               <Text style={subheading}>Recipient Information</Text>
               <Text style={text}>
-                {pkg.recipient.fullName}
+                <strong>Name:</strong> {pkg.recipient.fullName}
                 <br />
-                {pkg.recipient.email}
+                <strong>Email:</strong> {pkg.recipient.email}
                 <br />
-                {pkg.recipient.phone}
+                <strong>Phone:</strong> {pkg.recipient.phone}
                 <br />
-                {pkg.recipient.address}
+                <strong>Address:</strong> {pkg.recipient.address}
               </Text>
             </Section>
 
             {pkg.description && (
               <Section style={box}>
-                <Text style={subheading}>Package Description</Text>
+                <Text style={subheading}>Special Instructions</Text>
                 <Text style={text}>{pkg.description}</Text>
               </Section>
             )}
@@ -158,19 +155,6 @@ const subheading = {
   color: "#1a1a1a",
   fontSize: "18px",
   fontWeight: "600",
-  margin: "0 0 16px",
-}
-
-const label = {
-  color: "#525f7f",
-  fontSize: "14px",
-  fontWeight: "500",
-  margin: "8px 0 4px",
-}
-
-const value = {
-  color: "#1a1a1a",
-  fontSize: "16px",
   margin: "0 0 16px",
 }
 
