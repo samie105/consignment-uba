@@ -12,8 +12,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { toast } from "@/hooks/use-toast"
+import { createPackage, generatetracking_number } from "@/server/actions/packageActions"
+import { render } from "@react-email/render"
+import { ShippingNotificationEmail } from "@/emails/shipping-notification"
+import type { Package } from "@/types/package"
 
 export default function ShippingForm() {
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     senderName: "",
     senderEmail: "",
@@ -43,15 +48,121 @@ export default function ShippingForm() {
     setFormData((prev) => ({ ...prev, serviceType: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // In a real app, this would submit the form data to an API
-    console.log("Form submitted:", formData)
-    toast({
-      title: "Shipping request submitted",
-      description: "We'll process your request and contact you shortly.",
-    })
-    // Reset form or redirect
+    setIsSubmitting(true)
+
+    try {
+      // Generate tracking number
+      const tracking_number = await generatetracking_number()
+
+      // Parse dimensions
+      const [length, width, height] = formData.dimensions.split("x").map((d) => parseFloat(d.trim()))
+
+      // Create package data
+      const packageData: Package = {
+        tracking_number,
+        status: "pending",
+        package_type: formData.packageType as "standard" | "express" | "priority" | "custom",
+        weight: parseFloat(formData.weight),
+        dimensions: {
+          length,
+          width,
+          height,
+        },
+        description: formData.specialInstructions,
+        sender: {
+          fullName: formData.senderName,
+          email: formData.senderEmail,
+          phone: formData.senderPhone,
+          address: formData.senderAddress,
+        },
+        recipient: {
+          fullName: formData.recipientName,
+          email: formData.recipientEmail,
+          phone: formData.recipientPhone,
+          address: formData.recipientAddress,
+        },
+        checkpoints: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        payment: {
+          amount: 0,
+          isPaid: false,
+          method: "Credit Card",
+          isVisible: true,
+        },
+        current_location: {
+          latitude: 0,
+          longitude: 0,
+          address: "",
+        },
+        admin_id: "",
+      }
+
+      // Create package in database
+      const result = await createPackage(packageData)
+
+      if (!result.success) {
+        throw new Error(result.error || "Failed to create package")
+      }
+
+      // Generate email HTML
+      const emailHtml = render(
+        ShippingNotificationEmail({
+          package: packageData,
+          trackingUrl: `${process.env.NEXT_PUBLIC_APP_URL}/track?tracking=${tracking_number}`,
+        })
+      )
+
+      // Send email notification
+      const emailResponse = await fetch("/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to: formData.recipientEmail,
+          subject: `Your Package Tracking Number: ${tracking_number}`,
+          html: emailHtml,
+        }),
+      })
+
+      if (!emailResponse.ok) {
+        throw new Error("Failed to send email notification")
+      }
+
+      toast({
+        title: "Shipping request submitted",
+        description: `Your tracking number is: ${tracking_number}`,
+      })
+
+      // Reset form
+      setFormData({
+        senderName: "",
+        senderEmail: "",
+        senderPhone: "",
+        senderAddress: "",
+        recipientName: "",
+        recipientEmail: "",
+        recipientPhone: "",
+        recipientAddress: "",
+        packageType: "",
+        weight: "",
+        dimensions: "",
+        serviceType: "standard",
+        specialInstructions: "",
+      })
+    } catch (error) {
+      console.error("Error submitting form:", error)
+      toast({
+        title: "Error",
+        description: "Failed to submit shipping request. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -276,7 +387,7 @@ export default function ShippingForm() {
                   </TabsContent>
                 </Tabs>
                 <div className="mt-6 flex justify-end">
-                  <Button type="submit" className="w-full sm:w-auto">
+                  <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
                     Submit Shipping Request
                   </Button>
                 </div>

@@ -202,6 +202,8 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
                         <SelectItem value="arrived">Arrived</SelectItem>
                         <SelectItem value="customs_check">Customs Check</SelectItem>
                         <SelectItem value="customs_hold">Customs Clearance (ON HOLD)</SelectItem>
+                        <SelectItem value="package_declared">PACKAGE TO BE DECLARED ⚠️</SelectItem>
+                        <SelectItem value="customs_cleared">CUSTOMS CLEARANCE CLEARED</SelectItem>
                         <SelectItem value="delivered">Delivered</SelectItem>
                       </SelectContent>
                     </Select>

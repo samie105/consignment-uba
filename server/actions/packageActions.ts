@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { v4 as uuidv4 } from "uuid"
 import { cookies } from "next/headers"
@@ -40,56 +40,22 @@ const getCurrentAdminId = async () => {
 }
 
 // Helper function to generate a random tracking number
-export async function generatetracking_number() {
-  // Generate 11 random alphanumeric characters
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
-  for (let i = 0; i < 11; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return `TRK${result}`;
+export async function generatetracking_number(): Promise<string> {
+  // Generate a unique tracking number
+  const prefix = "DEL"
+  const timestamp = Date.now().toString().slice(-6)
+  const random = Math.random().toString(36).substring(2, 5).toUpperCase()
+  return `${prefix}${timestamp}${random}`
 }
 
 // Create a new package
-export async function createPackage(data: any) {
+export async function createPackage(packageData: any) {
   try {
     const supabase = createClient()
-
-    // Generate a tracking number
-    const tracking_number = await generatetracking_number()
-
-    // Get the current admin ID
-    const adminId = await getCurrentAdminId()
-
-    // Add current location if not provided
-    if (!data.current_location) {
-      data.current_location = {
-        latitude: 40.7128,
-        longitude: -74.006,
-        address: "New York, NY",
-      }
-    }
-
-    // Insert the package into the database
-    const { data: packageData, error } = await supabase
+    
+    const { data, error } = await supabase
       .from("packages")
-      .insert({
-        tracking_number: tracking_number,
-        status: data.status,
-        description: data.description,
-        weight: data.weight,
-        dimensions: data.dimensions,
-        sender: data.sender,
-        recipient: data.recipient,
-        payment: data.payment,
-        images: data.images || [],
-        checkpoints: data.checkpoints || [],
-        current_location: data.current_location,
-        admin_id: adminId,
-        package_type: data.package_type || 'standard',
-        date_shipped: data.date_shipped || new Date().toISOString(),
-        estimated_delivery_date: data.estimated_delivery_date || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      })
+      .insert([packageData])
       .select()
       .single()
 
@@ -98,22 +64,10 @@ export async function createPackage(data: any) {
       return { success: false, error: error.message }
     }
 
-    // Use revalidatePath only in app directory components
-    try {
-      revalidatePath("/admin/packages")
-    } catch (e) {
-      // Silently catch errors if revalidatePath is not supported
-      console.log("Note: revalidatePath not supported in this context")
-    }
-
-    return {
-      success: true,
-      tracking_number,
-      package: packageData,
-    }
-  } catch (error: any) {
-    console.error("Unexpected error creating package:", error)
-    return { success: false, error: error.message || "An unexpected error occurred" }
+    return { success: true, data }
+  } catch (error) {
+    console.error("Error creating package:", error)
+    return { success: false, error: "Failed to create package" }
   }
 }
 
@@ -144,9 +98,6 @@ export async function getAllPackages() {
       console.error("Error fetching packages:", error)
       return { success: false, error: error.message, packages: [] }
     }
-
-   
-   
 
     return { success: true, packages: data, error: null }
   } catch (error: any) {
@@ -182,58 +133,24 @@ export async function getPackageById(id: string) {
 // Update a package
 export async function updatePackage(tracking_number: string, packageData: any) {
   try {
-    console.log("Updating package:", tracking_number);
-    console.log("Package data:", JSON.stringify(packageData, null, 2));
-    
-    // Check if Supabase is configured
-    const configCheck = checkSupabaseConfig()
-    if (!configCheck.success) {
-      console.log("Supabase config check failed:", configCheck.error);
-      return configCheck
-    }
-
     const supabase = createClient()
-
-    // Prepare the package data
-    const updatedPackage = {
-      status: packageData.status,
-      description: packageData.description,
-      weight: packageData.weight,
-      dimensions: packageData.dimensions,
-      sender: packageData.sender,
-      recipient: packageData.recipient,
-      payment: packageData.payment,
-      images: packageData.images || [],
-      pdfs: packageData.pdfs || [],
-      package_type: packageData.package_type,
-      date_shipped: packageData.date_shipped,
-      estimated_delivery_date: packageData.estimated_delivery_date,
-    }
     
-    console.log("Prepared package data:", JSON.stringify(updatedPackage, null, 2));
+    const { data, error } = await supabase
+      .from("packages")
+      .update(packageData)
+      .eq("tracking_number", tracking_number)
+      .select()
+      .single()
 
-    // Update the package in the database
-    const { data, error } = await supabase.from("packages").update(updatedPackage).eq("tracking_number", tracking_number).select()
-    
     if (error) {
       console.error("Error updating package:", error)
       return { success: false, error: error.message }
     }
-    
-    console.log("Package updated successfully:", data);
-
-    // Revalidate the package page
-    try {
-      revalidatePath(`/admin/packages/${tracking_number}`)
-      revalidatePath("/admin/packages")
-    } catch (revalidateError) {
-      console.error("Error revalidating paths:", revalidateError);
-    }
 
     return { success: true, data }
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error updating package:", error)
-    return { success: false, error: error.message }
+    return { success: false, error: "Failed to update package" }
   }
 }
 
