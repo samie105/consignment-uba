@@ -163,7 +163,7 @@ export function CheckpointEditor({
           toast.success("Checkpoint updated successfully")
           setEditMode(null)
         } else {
-          throw new Error(result.error || "Failed to update checkpoint")
+          throw new Error((result as { error?: string }).error || "Failed to update checkpoint")
         }
       } else {
         result = await addCheckpoint(tracking_number, checkpointData)
@@ -175,7 +175,7 @@ export function CheckpointEditor({
           setCheckpoints(prev => [...prev, newCheckpoint])
           toast.success("Checkpoint added successfully")
         } else {
-          throw new Error(result.error || "Failed to add checkpoint")
+          throw new Error((result as { error?: string }).error || "Failed to add checkpoint")
         }
       }
 

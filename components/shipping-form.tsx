@@ -100,7 +100,7 @@ export default function ShippingForm() {
       const result = await createPackage(packageData)
 
       if (!result.success) {
-        throw new Error(result.error || "Failed to create package")
+        throw new Error((result as { error?: string }).error || "Failed to create package")
       }
 
       // Send detailed email to admin only

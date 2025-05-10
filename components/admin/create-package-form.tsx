@@ -132,12 +132,14 @@ export function CreatePackageForm() {
         images,
         pdfs,
       })
+      
       if (result.success) {
         toast.success("Package created successfully")
         router.push("/admin/packages")
       } else {
+        // Use a type assertion to handle the error
         toast.error("Failed to create package", {
-          description: result.error,
+          description: (result as { error?: string }).error || "Unknown error occurred"
         })
       }
     } catch (error) {
