@@ -70,7 +70,7 @@ export default function AdminSidebar({ className, user }: SidebarProps) {
             </Link>
           ) : (
             <Link href="/admin/dashboard" className="flex items-center justify-center">
-              <Package className="h-6 w-6" />
+             
             </Link>
           )}
           <Button
@@ -91,7 +91,7 @@ export default function AdminSidebar({ className, user }: SidebarProps) {
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent",
                   route.active ? "bg-accent text-accent-foreground" : "text-muted-foreground",
-                  !isOpen && "justify-center px-0",
+                  !isOpen && "justify-center px-3",
                 )}
               >
                 <route.icon className={cn("h-5 w-5", route.active && "text-primary")} />

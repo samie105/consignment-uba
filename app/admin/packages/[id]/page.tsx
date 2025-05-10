@@ -6,7 +6,8 @@ import Link from "next/link"
 import { PackageImageGallery } from "@/components/package-image-gallery"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import DeletePackageButton from "@/components/admin/delete-package-button"
-import { DynamicLocationPicker, DynamicRealPackageMap } from "@/components/client/dynamic-imports"
+import { DynamicLocationPickerWrapper } from "@/components/client/location-wrapper"
+import { DynamicRealPackageMap } from "@/components/client/dynamic-imports"
 import type { LocationUpdateEvent } from "@/components/admin/location-picker"
 
 const statusColors = {
@@ -137,19 +138,15 @@ export default async function PackageDetailsPage({
                   />
                 </div>
 
-                {/* Location picker - using client component wrapper */}
+                {/* Location picker - using client component wrapper with no function props */}
                 <div className="space-y-2 pt-4 border-t">
                   <h3 className="text-lg font-medium">Update Package Location</h3>
                   <p className="text-sm text-muted-foreground">
                     Click on the map to set a new location for this package
                   </p>
-                  <DynamicLocationPicker
+                  <DynamicLocationPickerWrapper
                     initialLocation={packageData.current_location}
                     tracking_number={packageData.tracking_number}
-                    onLocationChange={(location: LocationUpdateEvent): void => {
-                      // Implement your location change handler here
-                      console.log("Location updated:", location)
-                    }}
                   />
                 </div>
               </div>
