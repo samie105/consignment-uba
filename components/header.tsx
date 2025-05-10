@@ -373,6 +373,7 @@ export default function Header() {
                   <SheetTitle>
                     <div className="flex items-center space-x-2">
                     <div className="h-10 w-auto flex items-center justify-center relative">
+                      <Box className="siz4-8"/>
               <svg width="130" height="30" viewBox="0 0 130 30" xmlns="http://www.w3.org/2000/svg">
                 <style>
                   {`

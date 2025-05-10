@@ -2,9 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -26,57 +24,7 @@ import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { PDFUpload } from "@/components/ui/pdf-upload"
 import { DocumentsSection } from "./documents-section"
-
-// Define the form schema
-const formSchema = z.object({
-  tracking_number: z.string().optional(),
-  status: z.string().optional(),
-  description: z.string().optional(),
-  weight: z.coerce.number().optional(),
-  dimensions: z.object({
-    length: z.coerce.number().optional(),
-    width: z.coerce.number().optional(),
-    height: z.coerce.number().optional(),
-  }).optional(),
-  sender: z.object({
-    fullName: z.string().optional(),
-    email: z.string().optional(),
-    phone: z.string().optional(),
-    address: z.string().optional(),
-  }).optional(),
-  recipient: z.object({
-    fullName: z.string().optional(),
-    email: z.string().optional(),
-    phone: z.string().optional(),
-    address: z.string().optional(),
-  }).optional(),
-  payment: z.object({
-    amount: z.coerce.number().optional(),
-    isPaid: z.boolean().optional(),
-    method: z.string().optional(),
-    isVisible: z.boolean().optional(),
-  }).optional(),
-  images: z.array(z.string()).optional(),
-  pdfs: z.array(z.string()).optional(),
-  checkpoints: z.array(z.object({
-    id: z.string().optional(),
-    location: z.string().optional(),
-    description: z.string().optional(),
-    timestamp: z.string().optional(),
-    status: z.string().optional(),
-    coordinates: z.object({
-      latitude: z.number().optional(),
-      longitude: z.number().optional(),
-    }).optional(),
-    customTime: z.boolean().optional(),
-    customDate: z.boolean().optional(),
-  })).optional(),
-  package_type: z.enum(['standard', 'express', 'priority', 'custom']).optional(),
-  date_shipped: z.string().optional(),
-  estimated_delivery_date: z.string().optional(),
-})
-
-type FormValues = z.infer<typeof formSchema>
+import { v4 as uuidv4 } from "uuid"
 
 interface EditPackageFormProps {
   packageData: Package
@@ -91,7 +39,6 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
   const [showDocuments, setShowDocuments] = useState(false)
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       tracking_number: packageData.tracking_number,
       status: packageData.status,
@@ -110,53 +57,13 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
         ...checkpoint,
         customTime: false,
         customDate: false,
+        timestamp: checkpoint.timestamp || new Date().toISOString(),
       })),
       package_type: packageData.package_type || 'standard',
-      date_shipped: packageData.date_shipped || '',
-      estimated_delivery_date: packageData.estimated_delivery_date || '',
+      date_shipped: packageData.date_shipped || null,
+      estimated_delivery_date: packageData.estimated_delivery_date || null,
     },
   })
-
-  const onSubmit = async (values: FormValues) => {
-    console.log("submitting")
-    setIsSubmitting(true)
-    try {
-      // Get the original and new tracking numbers
-      const originalTrackingNumber = packageData.tracking_number
-      const newTrackingNumber = values.tracking_number || originalTrackingNumber
-      
-      console.log("Saving package with values:", {
-        ...values,
-        images,
-        pdfs,
-      })
-      
-      // Create a copy of the values so we don't modify the form values directly
-      const dataToSave = {
-        ...values,
-        images,
-        pdfs,
-      }
-      
-      const updateResult = await updatePackage(originalTrackingNumber, dataToSave)
-      
-      console.log("Update result:", updateResult)
-      
-      if (updateResult.success) {
-        toast.success("Package updated successfully")
-        onSuccess()
-      } else {
-        toast.error("Failed to update package", {
-          description: updateResult.error,
-        })
-      }
-    } catch (error) {
-      console.error("Error updating package:", error)
-      toast.error("An unexpected error occurred")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
   return (
     <>
@@ -185,7 +92,7 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
         </TabsList>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form className="space-y-6">
             <TabsContent value="details" className="space-y-4 pt-4">
               <FormField
                 control={form.control}
@@ -440,12 +347,17 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
                             selected={field.value ? new Date(field.value) : undefined}
                             onSelect={(date) => {
                               if (date) {
-                                const newDate = new Date(date);
-                                newDate.setHours(new Date().getHours());
-                                newDate.setMinutes(new Date().getMinutes());
-                                field.onChange(newDate.toISOString());
+                                try {
+                                  const newDate = new Date(date);
+                                  newDate.setHours(new Date().getHours());
+                                  newDate.setMinutes(new Date().getMinutes());
+                                  field.onChange(newDate.toISOString());
+                                } catch (e) {
+                                  console.error("Error parsing date:", e);
+                                  field.onChange(null);
+                                }
                               } else {
-                                field.onChange("");
+                                field.onChange(null);
                               }
                             }}
                             initialFocus
@@ -504,12 +416,17 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
                             selected={field.value ? new Date(field.value) : undefined}
                             onSelect={(date) => {
                               if (date) {
-                                const newDate = new Date(date);
-                                newDate.setHours(new Date().getHours());
-                                newDate.setMinutes(new Date().getMinutes());
-                                field.onChange(newDate.toISOString());
+                                try {
+                                  const newDate = new Date(date);
+                                  newDate.setHours(new Date().getHours());
+                                  newDate.setMinutes(new Date().getMinutes());
+                                  field.onChange(newDate.toISOString());
+                                } catch (e) {
+                                  console.error("Error parsing date:", e);
+                                  field.onChange(null);
+                                }
                               } else {
-                                field.onChange("");
+                                field.onChange(null);
                               }
                             }}
                             initialFocus
@@ -562,7 +479,7 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" {...field} />
+                        <Input type="text" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -622,7 +539,7 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" {...field} />
+                        <Input type="text" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -673,7 +590,7 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
             <TabsContent value="tracking" className="space-y-4 pt-4">
               <CheckpointEditor
                 tracking_number={packageData.tracking_number}
-                initialCheckpoints={packageData.checkpoints?.map(checkpoint => ({
+                initialCheckpoints={(packageData.checkpoints || []).map(checkpoint => ({
                   ...checkpoint,
                   coordinates: checkpoint.coordinates ? {
                     lat: checkpoint.coordinates.latitude,
@@ -683,7 +600,13 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
                   customDate: false,
                 }))}
                 onCheckpointAdded={() => {
-                  form.setValue("checkpoints", packageData.checkpoints || [])
+                  // Transform checkpoints to match expected format with required properties
+                  const formattedCheckpoints = (packageData.checkpoints || []).map(checkpoint => ({
+                    ...checkpoint,
+                    customTime: false,
+                    customDate: false,
+                  }));
+                  form.setValue("checkpoints", formattedCheckpoints);
                 }}
                 allowCustomTime={true}
               />
@@ -699,7 +622,123 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
                 Cancel
               </Button>
               <Button
-                type="submit"
+                type="button" 
+                onClick={async (e) => {
+                  // Prevent default form submission to be safe
+                  e.preventDefault();
+                  
+                  try {
+                    setIsSubmitting(true);
+                    
+                    // Get the form values directly without validation
+                    const formValues = form.getValues();
+                    const originalTrackingNumber = packageData.tracking_number;
+                    
+                    // More comprehensive data cleaning to prevent timestamp errors
+                    const cleanedFormValues = {
+                      ...formValues,
+                      // Handle date fields - convert empty strings to null
+                      date_shipped: formValues.date_shipped && formValues.date_shipped !== "" 
+                        ? formValues.date_shipped 
+                        : null,
+                      estimated_delivery_date: formValues.estimated_delivery_date && formValues.estimated_delivery_date !== "" 
+                        ? formValues.estimated_delivery_date 
+                        : null,
+                      // Ensure sender and recipient have valid email values
+                      sender: {
+                        ...formValues.sender,
+                        email: formValues.sender?.email || '',
+                      },
+                      recipient: {
+                        ...formValues.recipient,
+                        email: formValues.recipient?.email || '',
+                      },
+                      // Handle checkpoints with thorough validation
+                      checkpoints: (formValues.checkpoints || []).map(checkpoint => {
+                        // Ensure valid timestamp
+                        let timestamp;
+                        try {
+                          timestamp = checkpoint.timestamp && checkpoint.timestamp !== "" 
+                            ? new Date(checkpoint.timestamp).toISOString()
+                            : new Date().toISOString();
+                        } catch (e) {
+                          // If date parsing fails, use current time
+                          timestamp = new Date().toISOString();
+                        }
+                        
+                        // Transform coordinates from lat/lng to latitude/longitude format
+                        let coordinates = null;
+                        if (checkpoint.coordinates) {
+                          // Use type assertion to handle the different coordinate formats
+                          const coords = checkpoint.coordinates as any;
+                          coordinates = {
+                            latitude: coords.lat !== undefined ? coords.lat : coords.latitude,
+                            longitude: coords.lng !== undefined ? coords.lng : coords.longitude
+                          };
+                        }
+                        
+                        return {
+                          id: checkpoint.id || uuidv4(),
+                          timestamp,
+                          location: checkpoint.location || '',
+                          description: checkpoint.description || '',
+                          status: checkpoint.status || 'in_transit',
+                          coordinates
+                        };
+                      }),
+                      // Preserve the admin_id from the original package
+                      admin_id: packageData.admin_id,
+                    };
+                    
+                    const dataToSave = {
+                      ...cleanedFormValues,
+                      images,
+                      pdfs,
+                    };
+                    
+                    try {
+                      const updateResult = await updatePackage(originalTrackingNumber, dataToSave);
+                      
+                      if (updateResult.success) {
+                        toast.success("Package updated successfully");
+                        router.push('/admin/packages');
+                        router.refresh();
+                        onSuccess();
+                      } else {
+                        // Handle specific error types
+                        if (updateResult.error?.includes('timestamp') || updateResult.error?.includes('22007')) {
+                          toast.error("Date/time format error", {
+                            description: "There was an issue with the date formats. Please try again."
+                          });
+                        } else {
+                          toast.error("Failed to update package", {
+                            description: updateResult.error || "Unknown error",
+                          });
+                        }
+                      }
+                    } catch (saveError) {
+                      console.error("Exception during package update:", saveError);
+                      toast.error("Unable to save package", {
+                        description: "An error occurred while saving. Please try again."
+                      });
+                    }
+                  } catch (error) {
+                    console.error("Error updating package:", error);
+                    
+                    // Check if it's a timestamp error
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    if (errorMessage.includes('timestamp') || errorMessage.includes('22007')) {
+                      toast.error("Date/time format error", {
+                        description: "Please ensure all dates are valid or leave them blank"
+                      });
+                    } else {
+                      toast.error("An unexpected error occurred");
+                    }
+                    
+                  } finally {
+                    setIsSubmitting(false);
+                  }
+                }}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (

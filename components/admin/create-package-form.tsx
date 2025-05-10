@@ -18,11 +18,15 @@ import { toast } from "sonner"
 import { createPackage, generatetracking_number } from "@/server/actions/packageActions"
 import { CheckpointEditor } from "./checkpoint-editor"
 import { FileUpload } from "@/components/ui/file-upload"
-import { Package as LucidePackage, User, UserCheck, Clock, ImageIcon, FileText, Plus, Trash, Upload, LucideRefreshCw } from "lucide-react"
+import { Package as LucidePackage, User, UserCheck, Clock, ImageIcon, FileText, Plus, Trash, Upload, LucideRefreshCw, CalendarIcon } from "lucide-react"
 import { v4 as uuidv4 } from "uuid"
 import { Badge } from "@/components/ui/badge"
 import { isValidImageUrl } from "@/lib/utils"
 import type { Checkpoint } from "@/lib/supabase"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
 
 // Define the form schema
 const formSchema = z.object({
@@ -424,11 +428,66 @@ export function CreatePackageForm() {
                 control={form.control}
                 name="date_shipped"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Date Shipped</FormLabel>
-                    <FormControl>
-                      <Input type="datetime-local" {...field} />
-                    </FormControl>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(new Date(field.value), "PPP HH:mm")
+                            ) : (
+                              <span>Pick a date and time</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value ? new Date(field.value) : undefined}
+                          onSelect={(date) => {
+                            if (date) {
+                              try {
+                                const newDate = new Date(date);
+                                newDate.setHours(new Date().getHours());
+                                newDate.setMinutes(new Date().getMinutes());
+                                field.onChange(newDate.toISOString());
+                              } catch (e) {
+                                console.error("Error parsing date:", e);
+                                field.onChange("");
+                              }
+                            } else {
+                              field.onChange("");
+                            }
+                          }}
+                          initialFocus
+                        />
+                        <div className="p-3 border-t border-border">
+                          <Input
+                            type="time"
+                            onChange={(e) => {
+                              if (field.value && e.target.value) {
+                                const date = new Date(field.value);
+                                const [hours, minutes] = e.target.value.split(':').map(Number);
+                                date.setHours(hours || 0);
+                                date.setMinutes(minutes || 0);
+                                field.onChange(date.toISOString());
+                              }
+                            }}
+                            defaultValue={field.value ? format(new Date(field.value), "HH:mm") : ""}
+                            className="w-full"
+                          />
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -438,11 +497,66 @@ export function CreatePackageForm() {
                 control={form.control}
                 name="estimated_delivery_date"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Estimated Delivery Date</FormLabel>
-                    <FormControl>
-                      <Input type="datetime-local" {...field} />
-                    </FormControl>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(new Date(field.value), "PPP HH:mm")
+                            ) : (
+                              <span>Pick a date and time</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value ? new Date(field.value) : undefined}
+                          onSelect={(date) => {
+                            if (date) {
+                              try {
+                                const newDate = new Date(date);
+                                newDate.setHours(new Date().getHours());
+                                newDate.setMinutes(new Date().getMinutes());
+                                field.onChange(newDate.toISOString());
+                              } catch (e) {
+                                console.error("Error parsing date:", e);
+                                field.onChange("");
+                              }
+                            } else {
+                              field.onChange("");
+                            }
+                          }}
+                          initialFocus
+                        />
+                        <div className="p-3 border-t border-border">
+                          <Input
+                            type="time"
+                            onChange={(e) => {
+                              if (field.value && e.target.value) {
+                                const date = new Date(field.value);
+                                const [hours, minutes] = e.target.value.split(':').map(Number);
+                                date.setHours(hours || 0);
+                                date.setMinutes(minutes || 0);
+                                field.onChange(date.toISOString());
+                              }
+                            }}
+                            defaultValue={field.value ? format(new Date(field.value), "HH:mm") : ""}
+                            className="w-full"
+                          />
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}

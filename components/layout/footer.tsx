@@ -41,7 +41,7 @@ export function Footer() {
             <ul className="space-y-2">
               <li className="flex items-center gap-2 text-muted-foreground">
                 <Mail className="h-4 w-4" />
-                <a href="mailto:info@deliveryone.com">info@deliveryone.com</a>
+                <a href="mailto:info@Transivio.com">info@Transivio.com</a>
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
                 <Phone className="h-4 w-4" />
@@ -56,7 +56,7 @@ export function Footer() {
         </div>
         
         <div className="mt-8 pt-8 border-t text-center text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} DeliveryOne. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Transivio. All rights reserved.</p>
         </div>
       </div>
     </footer>

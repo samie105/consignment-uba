@@ -60,8 +60,14 @@ export default function RealPackageMap({
 
     // Initialize map if it doesn't exist
     if (mapRef.current && !leafletMapRef.current) {
+      // Default coordinates if current_location is null
+      const defaultCoordinates = [0, 0]
+      const coordinates = packageData.current_location 
+        ? [packageData.current_location.latitude, packageData.current_location.longitude]
+        : defaultCoordinates
+      
       leafletMapRef.current = L.map(mapRef.current).setView(
-        [packageData.current_location.latitude, packageData.current_location.longitude],
+        coordinates as [number, number],
         5,
       )
 
@@ -83,19 +89,21 @@ export default function RealPackageMap({
         }
       })
 
-      // Add current location marker with custom icon
-      const currentLocationIcon = L.divIcon({
-        className: "custom-div-icon",
-        html: `<div style="background-color: #ef4444; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>`,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
-      })
+      // Add current location marker with custom icon if we have valid coordinates
+      if (packageData.current_location) {
+        const currentLocationIcon = L.divIcon({
+          className: "custom-div-icon",
+          html: `<div style="background-color: #ef4444; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>`,
+          iconSize: [20, 20],
+          iconAnchor: [10, 10],
+        })
 
-      const currentMarker = L.marker([packageData.current_location.latitude, packageData.current_location.longitude], {
-        icon: currentLocationIcon,
-      })
-        .addTo(map)
-        .bindPopup(`<b>Current Location</b><br>${packageData.current_location.address || "Unknown location"}`)
+        const currentMarker = L.marker([packageData.current_location.latitude, packageData.current_location.longitude], {
+          icon: currentLocationIcon,
+        })
+          .addTo(map)
+          .bindPopup(`<b>Current Location</b><br>${packageData.current_location.address || "Unknown location"}`)
+      }
 
       // Add checkpoint markers and path if showCheckpoints is true
       if (showCheckpoints && checkpoints.length > 0) {
@@ -104,8 +112,10 @@ export default function RealPackageMap({
           .filter((cp) => cp.coordinates && cp.coordinates.lat && cp.coordinates.lng)
           .map((cp) => [cp.coordinates.lat, cp.coordinates.lng] as [number, number])
 
-        // Add the current location to the path
-        checkpointCoordinates.push([packageData.current_location.latitude, packageData.current_location.longitude])
+        // Add the current location to the path if it exists
+        if (packageData.current_location) {
+          checkpointCoordinates.push([packageData.current_location.latitude, packageData.current_location.longitude])
+        }
 
         // Create a polyline for the path
         if (checkpointCoordinates.length > 1) {
@@ -144,8 +154,10 @@ export default function RealPackageMap({
           map.setView([packageData.current_location.latitude, packageData.current_location.longitude], 10)
         }
       } else {
-        // If not showing checkpoints, just center on current location
-        map.setView([packageData.current_location.latitude, packageData.current_location.longitude], 10)
+        // If not showing checkpoints, just center on current location if it exists
+        if (packageData.current_location) {
+          map.setView([packageData.current_location.latitude, packageData.current_location.longitude], 10)
+        }
       }
     }
 

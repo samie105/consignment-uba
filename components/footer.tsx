@@ -22,7 +22,7 @@ export default function Footer() {
         <div className="py-12 px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">DeliveryOne</h3>
+              <h3 className="text-lg font-semibold">Transivio</h3>
               <p className="text-sm text-muted-foreground">
                 Fast, reliable package delivery services for businesses and individuals.
               </p>
@@ -147,8 +147,8 @@ export default function Footer() {
                 </li>
                 <li className="flex items-center">
                   <Mail className="h-5 w-5 mr-2 text-muted-foreground" />
-                  <a href="mailto:info@deliveryone.com" className="text-muted-foreground hover:text-foreground transition-colors">
-                    info@deliveryone.com
+                  <a href="mailto:info@Transivio.com" className="text-muted-foreground hover:text-foreground transition-colors">
+                    info@Transivio.com
                   </a>
                 </li>
               </ul>
@@ -159,7 +159,7 @@ export default function Footer() {
         <div className="border-t py-6 px-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-muted-foreground">
-              &copy; {currentYear} DeliveryOne. All rights reserved.
+              &copy; {currentYear} Transivio. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">

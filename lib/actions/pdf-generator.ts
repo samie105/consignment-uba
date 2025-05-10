@@ -72,7 +72,7 @@ export async function generatePDF(packageData: PackageData): Promise<Buffer> {
   return new Promise(async (resolve, reject) => {
     try {
       // Generate QR code for the tracking number
-      const qrCodeDataUrl = await QRCode.toDataURL(`https://deliveryone.vercel.app/tracking/${packageData.tracking_number}`, {
+      const qrCodeDataUrl = await QRCode.toDataURL(`https://Transivio.vercel.app/tracking/${packageData.tracking_number}`, {
         errorCorrectionLevel: 'H',
         margin: 1,
         width: 150
@@ -85,7 +85,7 @@ export async function generatePDF(packageData: PackageData): Promise<Buffer> {
         font: 'Courier',
         info: {
           Title: `Package Tracking - ${packageData.tracking_number}`,
-          Author: "DeliveryOne"
+          Author: "Transivio"
         }
       });
       

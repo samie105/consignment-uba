@@ -51,11 +51,30 @@ export async function generatetracking_number(): Promise<string> {
 // Create a new package
 export async function createPackage(packageData: any) {
   try {
+    // Check if Supabase is configured
+    const configCheck = checkSupabaseConfig()
+    if (!configCheck.success) {
+      return configCheck
+    }
+    
     const supabase = createClient()
+    
+    // Get the current admin ID
+    const adminId = await getCurrentAdminId()
+    
+    if (!adminId) {
+      return { success: false, error: "Admin ID not found. Please log in again." }
+    }
+    
+    // Add admin_id to the package data
+    const packageWithAdminId = {
+      ...packageData,
+      admin_id: adminId
+    }
     
     const { data, error } = await supabase
       .from("packages")
-      .insert([packageData])
+      .insert([packageWithAdminId])
       .select()
       .single()
 
@@ -64,6 +83,9 @@ export async function createPackage(packageData: any) {
       return { success: false, error: error.message }
     }
 
+    // Revalidate the packages page
+    revalidatePath("/admin/packages")
+    
     return { success: true, data }
   } catch (error) {
     console.error("Error creating package:", error)
