@@ -77,7 +77,7 @@ export function Sponsors() {
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Our Trusted Partners</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            DeliveryUno is proud to collaborate with industry-leading partners who share our commitment to excellence,
+            Transivio is proud to collaborate with industry-leading partners who share our commitment to excellence,
             innovation, and customer satisfaction. These strategic alliances enable us to provide comprehensive delivery
             solutions across the globe.
           </p>

@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Package, Menu, Search, Moon, Sun, Laptop, Settings } from "lucide-react"
+import { Package, Menu, Search, Moon, Sun, Laptop, Settings, Box } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useMediaQuery } from "@/hooks/use-media-query" // Updated import path
@@ -17,6 +17,8 @@ import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { scrollToSection } from "@/lib/scroll-utils"
 import Cookies from "js-cookie"
+import Image from "next/image"
+import logo from "@/public/logo.svg"
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -186,9 +188,52 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center space-x-2">
-          <Link href="/" className="flex items-center">
-            <Package className="h-6 w-6 mr-2" />
-            <span className="text-xl font-bold">DeliveryUno</span>
+          <Box className="siz4-8"/>
+          <Link href="/" className="flex items-start">
+            <div className="h-10 w-auto flex items-center justify-center relative">
+              <svg width="130" height="30" viewBox="0 0 130 30" xmlns="http://www.w3.org/2000/svg">
+                <style>
+                  {`
+                    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500&display=swap');
+
+                    text {
+                      font-family: 'Manrope', sans-serif;
+                      font-size: 16px;
+                      stroke: currentColor;
+                      stroke-width: 1;
+                      stroke-dasharray: 300;
+                      stroke-dashoffset: 300;
+                      fill: currentColor;
+                      fill-opacity: 0;
+                      animation: strokeAnim 10s cubic-bezier(0.25, 0.1, 0.25, 1) infinite, fillAnim 10s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+                      animation-delay: 0s;
+                      letter-spacing:3px;
+                    }
+
+                    @keyframes strokeAnim {
+                      0%   { stroke-dashoffset: 300; }
+                      20%  { stroke-dashoffset: 0; }
+                      60%  { stroke-dashoffset: 0; }
+                      80%  { stroke-dashoffset: 300; }
+                      100% { stroke-dashoffset: 300; }
+                    }
+
+                    @keyframes fillAnim {
+                      0%   { fill-opacity: 0; }
+                      20%  { fill-opacity: 0; }
+                      25%  { fill-opacity: 0; }
+                      60%  { fill-opacity: 1; }
+                      65%  { fill-opacity: 0; }
+                      100% { fill-opacity: 0; }
+                    }
+                  `}
+                </style>
+
+                <rect width="100" height="30" fill="transparent" />
+                
+                <text x="5" y="22">TRANSIVIO</text>
+              </svg>
+            </div>
           </Link>
         </div>
 
@@ -327,8 +372,14 @@ export default function Header() {
                 <SheetHeader>
                   <SheetTitle>
                     <div className="flex items-center space-x-2">
-                      <Package className="h-6 w-6" />
-                      <span className="text-xl font-bold">DeliveryUno</span>
+                      <div className="h-8 w-28 relative">
+                        <object
+                          data="/logo.svg"
+                          type="image/svg+xml"
+                          className="h-full w-full"
+                          aria-label="Transivio Logo"
+                        />
+                      </div>
                     </div>
                   </SheetTitle>
                 </SheetHeader>

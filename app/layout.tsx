@@ -20,7 +20,7 @@ const manrope = Manrope({
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "DeliveryUno - Your Trusted Delivery Partner",
+  title: "Transivio - Your Trusted Delivery Partner",
   description: "Fast, reliable package delivery services for businesses and individuals.",
   generator: 'v0.dev'
 }

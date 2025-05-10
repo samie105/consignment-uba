@@ -3,8 +3,8 @@ import TrackPackageForm from "@/components/track-package-form"
 import { getPackageById } from "@/lib/actions/package"
 
 export const metadata = {
-  title: "Track Your Package | DeliveryUno",
-  description: "Track your package in real-time with DeliveryUno's tracking system.",
+  title: "Track Your Package | Transivio",
+  description: "Track your package in real-time with Transivio's tracking system.",
 }
 
 type SearchParams = { [key: string]: string | string[] | undefined }

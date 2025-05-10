@@ -93,11 +93,11 @@ export default function Contact() {
                   <p className="text-muted-foreground text-sm">
                     Customer Support:
                     <br />
-                    support@deliveryuno.com
+                    support@Transivio.com
                     <br />
                     Business Inquiries:
                     <br />
-                    info@deliveryuno.com
+                    info@Transivio.com
                   </p>
                 </CardContent>
               </Card>

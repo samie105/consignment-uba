@@ -10,7 +10,7 @@ import { Copy } from "lucide-react"
 
 export default function ContentEncryptor() {
   const [content, setContent] = useState("")
-  const [key, setKey] = useState("deliveryuno")
+  const [key, setKey] = useState("Transivio")
   const [encrypted, setEncrypted] = useState("")
   const [copied, setCopied] = useState(false)
 

@@ -225,13 +225,13 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
               <div className="space-y-4">
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">From</h3>
-                  <p className="font-medium capitalize">{packageData.sender?.address}</p>
-                  <p className="text-sm">{packageData.sender?.fullName}</p>
+                  <p className="font-medium capitalize">{packageData.sender?.address || "Not specified yet"}</p>
+                  <p className="text-sm">{packageData.sender?.fullName || "Not specified yet"}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">To</h3>
-                  <p className="font-medium">{packageData.recipient?.address}</p>
-                  <p className="text-sm">{packageData.recipient?.fullName}</p>
+                  <p className="font-medium">{packageData.recipient?.address || "Not specified yet"}</p>
+                  <p className="text-sm">{packageData.recipient?.fullName || "Not specified yet"}</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -240,21 +240,21 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
                     {packageData.status === "delivered" ? "Delivered On" : "Estimated Delivery"}
                   </h3>
                   <p className="font-medium">
-                    {packageData.created_at ? new Date(packageData.created_at).toLocaleString() : 'N/A'}
+                    {packageData.created_at ? new Date(packageData.created_at).toLocaleString() : 'Not specified yet'}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-4">
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Weight</h3>
-                    <p>{packageData.weight}KG</p>
+                    <p>{packageData.weight ? `${packageData.weight}KG` : "Not specified yet"}</p>
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Dimensions</h3>
-                    <p>{formatDimensions(packageData.dimensions)}</p>
+                    <p>{packageData.dimensions ? formatDimensions(packageData.dimensions) : "Not specified yet"}</p>
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Package Type</h3>
-                    <p>{packageData.packageType}</p>
+                    <p>{packageData.packageType || "Not specified yet"}</p>
                   </div>
                 </div>
               </div>

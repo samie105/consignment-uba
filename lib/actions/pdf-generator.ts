@@ -501,7 +501,7 @@ export async function generatePDF(packageData: PackageData): Promise<Buffer> {
       doc.font('Courier-Bold')
          .fontSize(11)
          .fillColor('white')
-         .text('DeliveryUno', 40, footerTop + 15);
+         .text('Transivio', 40, footerTop + 15);
       
       doc.font('Courier')
          .fontSize(10)
