@@ -694,7 +694,7 @@ export function CreatePackageForm() {
               return null;
             })()}
             <CheckpointEditor
-              key={`tracking-editor-create-${form.getValues("tracking_number") || "new"}-${checkpointVersion}-${form.getValues("checkpoints").map(cp => cp.id).join("-")}`}
+              key={`tracking-editor-create-${form.getValues("tracking_number") || "new"}-${checkpointVersion}-${form.getValues("checkpoints")?.map(cp => cp.id).join("-") || ""}`}
               tracking_number={form.getValues("tracking_number") || "preview"}
               initialCheckpoints={(form.getValues("checkpoints") || []).map(checkpoint => ({
                 ...checkpoint,

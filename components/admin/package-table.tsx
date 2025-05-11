@@ -47,7 +47,8 @@ const adaptPackageForPDF = (pkg: Package): PackageData => {
     payment: {
       ...pkg.payment,
       currency: 'USD',
-      status: pkg.payment.isPaid ? 'Paid' : 'Unpaid'
+      status: pkg.payment.isPaid ? 'Paid' : 'Unpaid',
+      isVisible: pkg.payment.isVisible || false
     },
     current_location: pkg.current_location,
     images: pkg.images || [],
