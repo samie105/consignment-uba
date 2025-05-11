@@ -107,6 +107,13 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
     }
   }
 
+  // Function to check if payment section should be visible
+  const shouldShowPayment = () => {
+    // Use the show_payment_section field from the database
+    // Also check that payment data exists
+    return !!packageData.show_payment_section && !!packageData.payment;
+  }
+
   return (
     <motion.div
       className="max-w-5xl mx-auto"
@@ -437,6 +444,39 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
                             <dt className="text-sm font-medium text-muted-foreground sm:w-40">Dimensions:</dt>
                             <dd>{formatDimensions(packageData.dimensions)}</dd>
                           </div>
+                          
+                          {/* Payment Information - Only show when appropriate */}
+                          {shouldShowPayment() && (
+                            <>
+                              <div className="pt-3 pb-1">
+                                <h4 className="text-base font-medium text-primary">Payment Information</h4>
+                              </div>
+                              <div className="flex flex-col sm:flex-row sm:gap-2">
+                                <dt className="text-sm font-medium text-muted-foreground sm:w-40">Amount:</dt>
+                                <dd className="font-medium">
+                                  {packageData.payment && packageData.payment.amount ? `$${packageData.payment.amount.toFixed(2)}` : 'Not specified'}
+                                </dd>
+                              </div>
+                              <div className="flex flex-col sm:flex-row sm:gap-2">
+                                <dt className="text-sm font-medium text-muted-foreground sm:w-40">Payment Status:</dt>
+                                <dd>
+                                  {packageData.payment && packageData.payment.isPaid ? (
+                                    <span className="flex items-center">
+                                      <Badge className="bg-green-500 text-white mr-2">Paid</Badge>
+                                    </span>
+                                  ) : (
+                                    <span className="flex items-center">
+                                      <Badge variant="outline" className="text-amber-500 border-amber-500 mr-2">Pending</Badge>
+                                    </span>
+                                  )}
+                                </dd>
+                              </div>
+                              <div className="flex flex-col sm:flex-row sm:gap-2">
+                                <dt className="text-sm font-medium text-muted-foreground sm:w-40">Payment Method:</dt>
+                                <dd>{packageData.payment && packageData.payment.method ? packageData.payment.method : 'Not specified'}</dd>
+                              </div>
+                            </>
+                          )}
                         </dl>
                       </div>
                     </div>

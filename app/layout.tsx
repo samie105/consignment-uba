@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Manrope } from "next/font/google"
 import { Toaster } from "@/components/ui/toaster"
+import Script from "next/script"
 import "./globals.css"
 import { initializeStorage } from "@/server/actions/storageActions"
 import { Inter } from "next/font/google"
@@ -49,6 +50,9 @@ export default async function RootLayout({
           </div>
           <Toaster />
         </Providers>
+        {!isAdminRoute && (
+          <Script src="//code.jivosite.com/widget/XzTvZMQnGx" strategy="afterInteractive" />
+        )}
       </body>
     </html>
   )
