@@ -84,6 +84,7 @@ export function CreatePackageForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [images, setImages] = useState<string[]>([])
   const [pdfs, setPdfs] = useState<string[]>([])
+  const [checkpointVersion, setCheckpointVersion] = useState(0)
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -687,11 +688,59 @@ export function CreatePackageForm() {
           </TabsContent>
 
           <TabsContent value="tracking" className="space-y-4 pt-4">
+            {/* Debug info */}
+            {(() => {
+              console.log("Tracking tab in create form. Current checkpoints:", form.getValues("checkpoints"));
+              return null;
+            })()}
             <CheckpointEditor
-              tracking_number={form.getValues("tracking_number")}
-              initialCheckpoints={[]}
-              onCheckpointAdded={() => {
-                form.setValue("checkpoints", form.getValues("checkpoints") || [])
+              key={`tracking-editor-create-${form.getValues("tracking_number") || "new"}-${checkpointVersion}-${form.getValues("checkpoints").map(cp => cp.id).join("-")}`}
+              tracking_number={form.getValues("tracking_number") || "preview"}
+              initialCheckpoints={(form.getValues("checkpoints") || []).map(checkpoint => ({
+                ...checkpoint,
+                // Ensure required string properties have default values
+                location: checkpoint.location || "",
+                description: checkpoint.description || "",
+                status: checkpoint.status || "in_transit",
+                timestamp: checkpoint.timestamp || new Date().toISOString(),
+                id: checkpoint.id || `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+              }))}
+              onCheckpointAdded={(updatedCheckpoints) => {
+                if (updatedCheckpoints) {
+                  console.log("Parent create form receiving updated checkpoints:", updatedCheckpoints);
+                  
+                  // Create a forceful update by replacing the entire checkpoints array
+                  try {
+                    const formattedCheckpoints = updatedCheckpoints.map(cp => ({
+                      ...cp,
+                      coordinates: cp.coordinates ? {
+                        latitude: (cp.coordinates.lat !== undefined ? cp.coordinates.lat : 
+                                  cp.coordinates.latitude !== undefined ? cp.coordinates.latitude : 0),
+                        longitude: (cp.coordinates.lng !== undefined ? cp.coordinates.lng :
+                                   cp.coordinates.longitude !== undefined ? cp.coordinates.longitude : 0)
+                      } : null,
+                      id: cp.id,
+                      location: cp.location || "",
+                      description: cp.description || "",
+                      status: cp.status || "in_transit",
+                      timestamp: cp.timestamp || new Date().toISOString()
+                    }));
+                    
+                    // Set the form value with all validation flags to force update
+                    form.setValue("checkpoints", formattedCheckpoints, { 
+                      shouldDirty: true, 
+                      shouldTouch: true,
+                      shouldValidate: true 
+                    });
+                    
+                    // Force re-render with a version update
+                    setCheckpointVersion(prev => prev + 1);
+                    
+                    console.log("Form values after checkpoint update:", form.getValues("checkpoints"));
+                  } catch (error) {
+                    console.error("Error updating checkpoints in form:", error);
+                  }
+                }
               }}
               allowCustomTime={true}
             />

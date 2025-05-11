@@ -24,6 +24,7 @@ export interface PackageData {
     fullName: string
   }
   payment: {
+    isVisible: boolean
     amount: number
     currency: string
     status: string

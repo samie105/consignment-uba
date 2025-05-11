@@ -20,6 +20,7 @@ import { format, setHours, setMinutes } from "date-fns"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { useCheckpoints } from "@/contexts/checkpoints-context"
 
 // Dynamically import the map component to avoid SSR issues with Leaflet
 const LocationPicker = dynamic(() => import("@/components/admin/location-picker"), {
@@ -29,7 +30,7 @@ const LocationPicker = dynamic(() => import("@/components/admin/location-picker"
 
 interface CheckpointEditorProps {
   tracking_number: string
-  onCheckpointAdded?: () => void
+  onCheckpointAdded?: (updatedCheckpoints?: any[]) => void
   allowCustomTime?: boolean
   initialCheckpoints?: Array<{
     id: string
@@ -39,6 +40,7 @@ interface CheckpointEditorProps {
     timestamp: string
     customTime?: boolean
     customDate?: boolean
+    coordinates?: any
   }>
 }
 
@@ -48,16 +50,49 @@ export function CheckpointEditor({
   allowCustomTime = false,
   initialCheckpoints = []
 }: CheckpointEditorProps) {
+  console.log("CheckpointEditor rendered with initialCheckpoints:", initialCheckpoints);
+  
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showMap, setShowMap] = useState(false)
   const locationPickerRef = useRef<LocationPickerRef>(null)
   const [editMode, setEditMode] = useState<string | null>(null)
-  const [checkpoints, setCheckpoints] = useState(initialCheckpoints)
+  
+  // Get context methods
+  const { getCheckpoints, updateCheckpoints } = useCheckpoints();
+  
+  // Initialize with context values or fallback to initialCheckpoints prop
+  const contextCheckpoints = getCheckpoints(tracking_number);
+  const [checkpoints, setCheckpoints] = useState(() => {
+    // If we have checkpoints in context, use those
+    if (contextCheckpoints && contextCheckpoints.length > 0) {
+      return contextCheckpoints;
+    }
+    // Otherwise use initialCheckpoints
+    return initialCheckpoints;
+  });
+  
   const [useCustomDate, setUseCustomDate] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
   const [selectedTime, setSelectedTime] = useState<string>("12:00")
   const [isAM, setIsAM] = useState<boolean>(true)
+  
+  // Function to refresh component state from initialCheckpoints
+  const refreshCheckpoints = () => {
+    if (initialCheckpoints && initialCheckpoints.length >= 0) {
+      console.log("Refreshing checkpoints from initialCheckpoints:", initialCheckpoints);
+      setCheckpoints([...initialCheckpoints]);
+    }
+  };
+
+  // Keep local checkpoints state in sync with initialCheckpoints
+  useEffect(() => {
+    console.log("initialCheckpoints changed:", initialCheckpoints);
+    refreshCheckpoints();
+  }, [initialCheckpoints]); // Only depend on initialCheckpoints
+  
+  // Remove the effect that was causing infinite updates
+  // Instead we'll update the context explicitly after operations
 
   const [checkpoint, setCheckpoint] = useState({
     location: "",
@@ -85,15 +120,35 @@ export function CheckpointEditor({
 
   const handleDelete = async (id: string) => {
     try {
-      const result = await deleteCheckpoint(tracking_number, id)
+      // First update UI (for immediate feedback)
+      const newCheckpoints = checkpoints.filter(cp => cp.id !== id);
+      setCheckpoints(newCheckpoints);
+      
+      // Then notify parent
+      if (onCheckpointAdded) {
+        onCheckpointAdded(newCheckpoints);
+      }
+      
+      // Update context
+      if (tracking_number) {
+        updateCheckpoints(tracking_number, newCheckpoints);
+      }
+      
+      // Then call API
+      const result = await deleteCheckpoint(tracking_number, id);
+      
       if (result.success) {
-        setCheckpoints(prev => prev.filter(cp => cp.id !== id))
-        toast.success("Checkpoint deleted successfully")
+        toast.success("Checkpoint deleted successfully");
+        // Refresh from parent data to ensure consistency
+        refreshCheckpoints();
       } else {
-        toast.error("Failed to delete checkpoint")
+        // If API fails, revert the UI change
+        toast.error("Failed to delete checkpoint");
+        refreshCheckpoints();
       }
     } catch (error) {
-      toast.error("An error occurred while deleting the checkpoint")
+      toast.error("An error occurred while deleting the checkpoint");
+      refreshCheckpoints();
     }
   }
 
@@ -151,35 +206,93 @@ export function CheckpointEditor({
         customDate: useCustomDate,
       }
 
-      let result;
       if (editMode) {
-        result = await updateCheckpoint(tracking_number, editMode, checkpointData)
+        // For edit: Update UI first
+        const updatedCheckpoints = checkpoints.map(cp => 
+          cp.id === editMode 
+            ? { ...cp, ...checkpointData, id: editMode }
+            : cp
+        );
+        
+        setCheckpoints(updatedCheckpoints);
+        
+        if (onCheckpointAdded) {
+          onCheckpointAdded(updatedCheckpoints);
+        }
+        
+        // Update context
+        if (tracking_number) {
+          updateCheckpoints(tracking_number, updatedCheckpoints);
+        }
+        
+        // Then call API
+        const result = await updateCheckpoint(tracking_number, editMode, checkpointData);
+        
         if (result.success) {
-          setCheckpoints(prev => prev.map(cp => 
-            cp.id === editMode 
-              ? { ...cp, ...checkpointData, id: editMode }
-              : cp
-          ))
-          toast.success("Checkpoint updated successfully")
-          setEditMode(null)
+          toast.success("Checkpoint updated successfully");
+          setEditMode(null);
+          refreshCheckpoints();
         } else {
-          throw new Error((result as { error?: string }).error || "Failed to update checkpoint")
+          toast.error("Failed to update checkpoint");
+          refreshCheckpoints();
         }
       } else {
-        result = await addCheckpoint(tracking_number, checkpointData)
+        // For add: Generate a temporary ID
+        const tempId = `temp-${Date.now()}`;
+        
+        // Create new checkpoint with temp ID
+        const newCheckpoint = { 
+          ...checkpointData, 
+          id: tempId
+        };
+        
+        // Update UI immediately
+        const newCheckpoints = [...checkpoints, newCheckpoint];
+        setCheckpoints(newCheckpoints);
+        
+        if (onCheckpointAdded) {
+          onCheckpointAdded(newCheckpoints);
+        }
+        
+        // Update context
+        if (tracking_number) {
+          updateCheckpoints(tracking_number, newCheckpoints);
+        }
+        
+        // Then call API
+        const result = await addCheckpoint(tracking_number, checkpointData);
+        
         if (result.success) {
-          const newCheckpoint = { 
-            ...checkpointData, 
-            id: (result as any).checkpoint?.id || crypto.randomUUID()
+          // If API succeeds, update the temp ID to the server ID
+          const serverCheckpointId = (result as any).checkpoint?.id;
+          
+          if (serverCheckpointId) {
+            const finalCheckpoints = newCheckpoints.map(cp => 
+              cp.id === tempId ? { ...cp, id: serverCheckpointId } : cp
+            );
+            
+            setCheckpoints(finalCheckpoints);
+            
+            if (onCheckpointAdded) {
+              onCheckpointAdded(finalCheckpoints);
+            }
+            
+            // Update context with final IDs
+            if (tracking_number) {
+              updateCheckpoints(tracking_number, finalCheckpoints);
+            }
           }
-          setCheckpoints(prev => [...prev, newCheckpoint])
-          toast.success("Checkpoint added successfully")
+          
+          toast.success("Checkpoint added successfully");
+          refreshCheckpoints();
         } else {
-          throw new Error((result as { error?: string }).error || "Failed to add checkpoint")
+          // Handle failure - revert UI changes
+          toast.error("Failed to add checkpoint");
+          refreshCheckpoints();
         }
       }
-
-      // Reset form
+      
+      // Reset form after submission
       setCheckpoint({
         location: "",
         description: "",
@@ -192,13 +305,10 @@ export function CheckpointEditor({
       setSelectedTime("12:00")
       setIsAM(true)
       setShowMap(false)
-
-      if (onCheckpointAdded) {
-        onCheckpointAdded()
-      }
     } catch (error) {
       console.error("Error submitting checkpoint:", error)
-      toast.error(error instanceof Error ? error.message : "An unexpected error occurred")
+      toast.error("An unexpected error occurred")
+      refreshCheckpoints();
     } finally {
       setIsSubmitting(false)
     }
@@ -206,6 +316,65 @@ export function CheckpointEditor({
 
   return (
     <div className="space-y-6">
+      {/* Always render existing checkpoints first for visibility */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Checkpoints ({checkpoints.length})</CardTitle>
+          <CardDescription>View and manage package checkpoints</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {(() => { console.log("Rendering checkpoints:", checkpoints); return null; })()}
+          {checkpoints.length > 0 ? (
+            <div className="space-y-4">
+              {checkpoints.map((cp) => (
+                <Card key={cp.id}>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <p className="font-medium">{cp.location}</p>
+                        <p className="text-sm text-muted-foreground">{cp.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(cp.timestamp).toLocaleString()}
+                        </p>
+                        <span className="inline-block px-2 py-1 text-xs rounded-full bg-primary/10 text-primary">
+                          {cp.status.replace("_", " ").toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {e.preventDefault();handleEdit(cp.id)}}
+                          title="Edit checkpoint"
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Edit</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {e.preventDefault();handleDelete(cp.id)}}
+                          className="text-destructive"
+                          title="Delete checkpoint"
+                        >
+                          <Trash className="h-4 w-4" />
+                          <span className="sr-only">Delete</span>
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center p-6 border border-dashed rounded-lg">
+              <p className="text-muted-foreground">No checkpoints added yet. Use the form below to add package tracking points.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add checkpoint form */}
       <Card>
         <CardHeader>
           <CardTitle>{editMode ? "Edit Checkpoint" : "Add Checkpoint"}</CardTitle>
@@ -366,14 +535,14 @@ export function CheckpointEditor({
                         <Button
                           variant={isAM ? "default" : "outline"}
                           size="sm"
-                          onClick={() => setIsAM(true)}
+                          onClick={(e) => {e.preventDefault();setIsAM(true)}}
                         >
                           AM
                         </Button>
                         <Button
                           variant={!isAM ? "default" : "outline"}
                           size="sm"
-                          onClick={() => setIsAM(false)}
+                          onClick={(e) => {e.preventDefault();setIsAM(false)}}
                         >
                           PM
                         </Button>
@@ -432,58 +601,6 @@ export function CheckpointEditor({
           </div>
         </CardContent>
       </Card>
-
-      {checkpoints.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Existing Checkpoints</CardTitle>
-            <CardDescription>View and manage package checkpoints</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {checkpoints.map((cp) => (
-                <Card key={cp.id}>
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <p className="font-medium">{cp.location}</p>
-                        <p className="text-sm text-muted-foreground">{cp.description}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(cp.timestamp).toLocaleString()}
-                        </p>
-                        <span className="inline-block px-2 py-1 text-xs rounded-full bg-primary/10 text-primary">
-                          {cp.status.replace("_", " ").toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {e.preventDefault();handleEdit(cp.id)}}
-                          title="Edit checkpoint"
-                        >
-                          <Edit className="h-4 w-4" />
-                          <span className="sr-only">Edit</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {e.preventDefault();handleDelete(cp.id)}}
-                          className="text-destructive"
-                          title="Delete checkpoint"
-                        >
-                          <Trash className="h-4 w-4" />
-                          <span className="sr-only">Delete</span>
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -37,6 +37,10 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
   const [images, setImages] = useState<string[]>(packageData.images || [])
   const [pdfs, setPdfs] = useState<string[]>(packageData.pdfs || [])
   const [showDocuments, setShowDocuments] = useState(false)
+  const [checkpointVersion, setCheckpointVersion] = useState(0)
+  
+  console.log("EditPackageForm rendered with packageData:", packageData);
+  console.log("Checkpoints from packageData:", packageData.checkpoints);
 
   const form = useForm({
     defaultValues: {
@@ -53,21 +57,32 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
       },
       images: packageData.images || [],
       pdfs: packageData.pdfs || [],
-      checkpoints: (packageData.checkpoints || []).map(checkpoint => ({
-        ...checkpoint,
-        customTime: false,
-        customDate: false,
-        timestamp: checkpoint.timestamp || new Date().toISOString(),
-      })),
+      checkpoints: (packageData.checkpoints || []).map(checkpoint => {
+        console.log("Processing checkpoint for form:", checkpoint);
+        return {
+          ...checkpoint,
+          customTime: false,
+          customDate: false,
+          timestamp: checkpoint.timestamp || new Date().toISOString(),
+        };
+      }),
       package_type: packageData.package_type || 'standard',
       date_shipped: packageData.date_shipped || null,
       estimated_delivery_date: packageData.estimated_delivery_date || null,
     },
   })
+  
+  useEffect(() => {
+    console.log("Form values after initialization:", form.getValues());
+    console.log("Checkpoints in form:", form.getValues("checkpoints"));
+  }, []);
 
   return (
     <>
-      <Tabs defaultValue="details" className="w-full">
+      <Tabs defaultValue="details" className="w-full" onValueChange={(value) => {
+        console.log("Tab changed to:", value);
+        console.log("Current form checkpoints:", form.getValues("checkpoints"));
+      }}>
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="details" className="flex items-center justify-center">
             <LucidePackage className="h-4 w-4 mr-2 md:mr-2" />
@@ -588,25 +603,71 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
             </TabsContent>
 
             <TabsContent value="tracking" className="space-y-4 pt-4">
+              {/* Debug info */}
+              {(() => {
+                console.log("Tracking tab loaded. Raw checkpoints from packageData:", packageData.checkpoints);
+                return null;
+              })()}
               <CheckpointEditor
-                tracking_number={packageData.tracking_number}
-                initialCheckpoints={(packageData.checkpoints || []).map(checkpoint => ({
-                  ...checkpoint,
-                  coordinates: checkpoint.coordinates ? {
-                    lat: checkpoint.coordinates.latitude,
-                    lng: checkpoint.coordinates.longitude
-                  } : null,
-                  customTime: false,
-                  customDate: false,
-                }))}
-                onCheckpointAdded={() => {
-                  // Transform checkpoints to match expected format with required properties
-                  const formattedCheckpoints = (packageData.checkpoints || []).map(checkpoint => ({
+                key={`tracking-editor-${packageData.tracking_number}-${checkpointVersion}-${form.getValues("checkpoints").map(cp => cp.id).join("-")}`}
+                tracking_number={packageData.tracking_number || "edit-preview"}
+                initialCheckpoints={(form.getValues("checkpoints") || []).map(checkpoint => {
+                  console.log("Processing checkpoint:", checkpoint);
+                  return {
                     ...checkpoint,
+                    coordinates: checkpoint.coordinates ? {
+                      lat: checkpoint.coordinates.latitude,
+                      lng: checkpoint.coordinates.longitude
+                    } : null,
+                    // Ensure all required fields have values
+                    location: checkpoint.location || "",
+                    description: checkpoint.description || "",
+                    status: checkpoint.status || "in_transit",
+                    timestamp: checkpoint.timestamp || new Date().toISOString(),
+                    id: checkpoint.id || `edit-temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
                     customTime: false,
                     customDate: false,
-                  }));
-                  form.setValue("checkpoints", formattedCheckpoints);
+                  }
+                })}
+                onCheckpointAdded={(updatedCheckpoints) => {
+                  if (updatedCheckpoints) {
+                    console.log("Parent receiving updated checkpoints:", updatedCheckpoints);
+                    
+                    // Create a forceful update by replacing the entire checkpoints array
+                    try {
+                      const formattedCheckpoints = updatedCheckpoints.map(cp => ({
+                        ...cp,
+                        coordinates: cp.coordinates ? {
+                          latitude: (cp.coordinates.lat !== undefined ? cp.coordinates.lat : 
+                                    cp.coordinates.latitude !== undefined ? cp.coordinates.latitude : 0),
+                          longitude: (cp.coordinates.lng !== undefined ? cp.coordinates.lng :
+                                     cp.coordinates.longitude !== undefined ? cp.coordinates.longitude : 0)
+                        } : null,
+                        id: cp.id,
+                        location: cp.location || "",
+                        description: cp.description || "",
+                        status: cp.status || "in_transit",
+                        timestamp: cp.timestamp || new Date().toISOString()
+                      }));
+                      
+                      // Update packageData directly to ensure data consistency
+                      packageData.checkpoints = formattedCheckpoints;
+                      
+                      // Set the form value with all validation flags to force update
+                      form.setValue("checkpoints", formattedCheckpoints, { 
+                        shouldDirty: true, 
+                        shouldTouch: true,
+                        shouldValidate: true 
+                      });
+                      
+                      // Force re-render with a version update
+                      setCheckpointVersion(prev => prev + 1);
+                      
+                      console.log("Form values after checkpoint update:", form.getValues("checkpoints"));
+                    } catch (error) {
+                      console.error("Error updating checkpoints in form:", error);
+                    }
+                  }
                 }}
                 allowCustomTime={true}
               />
@@ -624,27 +685,22 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
               <Button
                 type="button" 
                 onClick={async (e) => {
-                  // Prevent default form submission to be safe
                   e.preventDefault();
                   
                   try {
                     setIsSubmitting(true);
                     
-                    // Get the form values directly without validation
                     const formValues = form.getValues();
                     const originalTrackingNumber = packageData.tracking_number;
                     
-                    // More comprehensive data cleaning to prevent timestamp errors
                     const cleanedFormValues = {
                       ...formValues,
-                      // Handle date fields - convert empty strings to null
                       date_shipped: formValues.date_shipped && formValues.date_shipped !== "" 
                         ? formValues.date_shipped 
                         : null,
                       estimated_delivery_date: formValues.estimated_delivery_date && formValues.estimated_delivery_date !== "" 
                         ? formValues.estimated_delivery_date 
                         : null,
-                      // Ensure sender and recipient have valid email values
                       sender: {
                         ...formValues.sender,
                         email: formValues.sender?.email || '',
@@ -653,23 +709,18 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
                         ...formValues.recipient,
                         email: formValues.recipient?.email || '',
                       },
-                      // Handle checkpoints with thorough validation
                       checkpoints: (formValues.checkpoints || []).map(checkpoint => {
-                        // Ensure valid timestamp
                         let timestamp;
                         try {
                           timestamp = checkpoint.timestamp && checkpoint.timestamp !== "" 
                             ? new Date(checkpoint.timestamp).toISOString()
                             : new Date().toISOString();
                         } catch (e) {
-                          // If date parsing fails, use current time
                           timestamp = new Date().toISOString();
                         }
                         
-                        // Transform coordinates from lat/lng to latitude/longitude format
                         let coordinates = null;
                         if (checkpoint.coordinates) {
-                          // Use type assertion to handle the different coordinate formats
                           const coords = checkpoint.coordinates as any;
                           coordinates = {
                             latitude: coords.lat !== undefined ? coords.lat : coords.latitude,
@@ -686,7 +737,6 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
                           coordinates
                         };
                       }),
-                      // Preserve the admin_id from the original package
                       admin_id: packageData.admin_id,
                     };
                     
@@ -705,7 +755,6 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
                         router.refresh();
                         onSuccess();
                       } else {
-                        // Handle specific error types
                         if (updateResult.error?.includes('timestamp') || updateResult.error?.includes('22007')) {
                           toast.error("Date/time format error", {
                             description: "There was an issue with the date formats. Please try again."
@@ -725,7 +774,6 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
                   } catch (error) {
                     console.error("Error updating package:", error);
                     
-                    // Check if it's a timestamp error
                     const errorMessage = error instanceof Error ? error.message : String(error);
                     if (errorMessage.includes('timestamp') || errorMessage.includes('22007')) {
                       toast.error("Date/time format error", {

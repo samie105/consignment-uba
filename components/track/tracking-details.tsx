@@ -109,10 +109,10 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
 
   // Function to check if payment section should be visible
   const shouldShowPayment = () => {
-    // Use the show_payment_section field from the database
-    // Also check that payment data exists
-    return !!packageData.show_payment_section && !!packageData.payment;
+    // Only show if the payment.isVisible flag is true
+    return !!packageData.payment?.isVisible;
   }
+  console.log(packageData)
 
   return (
     <motion.div
@@ -454,7 +454,7 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
                               <div className="flex flex-col sm:flex-row sm:gap-2">
                                 <dt className="text-sm font-medium text-muted-foreground sm:w-40">Amount:</dt>
                                 <dd className="font-medium">
-                                  {packageData.payment && packageData.payment.amount ? `$${packageData.payment.amount.toFixed(2)}` : 'Not specified'}
+                                  {packageData.payment && packageData.payment.amount ? `$${Number(packageData.payment.amount).toFixed(2)}` : 'Not specified'}
                                 </dd>
                               </div>
                               <div className="flex flex-col sm:flex-row sm:gap-2">

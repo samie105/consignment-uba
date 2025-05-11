@@ -65,6 +65,8 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
 
     fetchData()
   }, [tracking_number])
+  console.log(packageData)
+
 
   if (isLoading) {
     return (
@@ -142,6 +144,12 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
       default:
         return status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
     }
+  }
+
+  // Function to check if payment section should be visible
+  const shouldShowPayment = () => {
+    // Only show if the payment.isVisible flag is true
+    return packageData.payment?.isVisible;
   }
 
   return (
@@ -506,6 +514,36 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
                           {packageData.current_location?.address || "Location information not available"}
                         </p>
                       </div>
+
+                      {shouldShowPayment() && (
+                        <>
+                          <Separator />
+                          
+                          <div>
+                            <h3 className="text-lg font-semibold mb-3">Payment Information</h3>
+                            <dl className="space-y-3">
+                              <div className="flex flex-col sm:flex-row sm:gap-2">
+                                <dt className="text-sm font-medium text-muted-foreground sm:w-40">Status:</dt>
+                                <dd>{packageData.payment?.status || 'Not specified'}</dd>
+                              </div>
+                              <div className="flex flex-col sm:flex-row sm:gap-2">
+                                <dt className="text-sm font-medium text-muted-foreground sm:w-40">Method:</dt>
+                                <dd>{packageData.payment?.method || 'Not specified'}</dd>
+                              </div>
+                              <div className="flex flex-col sm:flex-row sm:gap-2">
+                                <dt className="text-sm font-medium text-muted-foreground sm:w-40">Amount:</dt>
+                                <dd className="font-medium">
+                                  {packageData.payment?.amount ? `$${Number(packageData.payment.amount).toFixed(2)}` : 'Not specified'}
+                                </dd>
+                              </div>
+                              <div className="flex flex-col sm:flex-row sm:gap-2">
+                                <dt className="text-sm font-medium text-muted-foreground sm:w-40">Date:</dt>
+                                <dd>{packageData.payment?.date || 'Not specified'}</dd>
+                              </div>
+                            </dl>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardContent>
