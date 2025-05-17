@@ -57,9 +57,9 @@ export default function Contact() {
                   </div>
                   <h4 className="text-lg font-semibold mb-2">Our Location</h4>
                   <p className="text-muted-foreground text-sm">
-                    123 Logistics Way
+                    795 Sunset Ridge Lane
                     <br />
-                    Shipping City, SC 12345
+                    Sacramento, CA 95826
                     <br />
                     United States
                   </p>
@@ -75,11 +75,11 @@ export default function Contact() {
                   <p className="text-muted-foreground text-sm">
                     Customer Support:
                     <br />
-                    +1 (555) 123-4567
+                    +1 (309) 868-3754
                     <br />
                     Business Inquiries:
                     <br />
-                    +1 (555) 765-4321
+                    +1 (309) 868-3754
                   </p>
                 </CardContent>
               </Card>
@@ -93,11 +93,11 @@ export default function Contact() {
                   <p className="text-muted-foreground text-sm">
                     Customer Support:
                     <br />
-                    support@Greenroute Delivery.com
+                    support@greenrouteservice.pro
                     <br />
                     Business Inquiries:
                     <br />
-                    info@Greenroute Delivery.com
+                    support@greenrouteservice.pro
                   </p>
                 </CardContent>
               </Card>

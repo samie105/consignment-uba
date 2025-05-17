@@ -343,15 +343,20 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
                             className={`absolute left-0 overflow-visible top-1.5 h-6 w-6 rounded-full border-2 border-background flex items-center justify-center z-20 ${
                               index === 0
                                 ? "bg-primary text-primary-foreground"
-                                : "bg-muted-foreground/20 text-muted-foreground"
-                            }`}
+                                : getStatusColor(checkpoint.status) + " text-white"
+                              }`}
                           >    
                          {index < packageData.checkpoints.length - 1 &&    <div
                           className=" absolute top-9 md:top-8 w-0 border z-50 h-40 md:h-28 border-primary/50 border-dashed"
                        
                         />}
-                            {index === 0 && <CheckCircle className="h-4 w-4" />}
-                            {index > 0 && <div className="h-2 bg-primary animate-ping w-2 rounded-full" />}
+                            {checkpoint.status === "delivered" || checkpoint.status === "arrived"? (
+                              <CheckCircle className="h-4 w-4" />
+                            ) : checkpoint.status === "in_transit" ? (
+                              <MapPin className="h-4 w-4 animate-pulse" />
+                            ) : (
+                              <MapPin className="h-4 w-4" />
+                            )}
 
                           </div>
 

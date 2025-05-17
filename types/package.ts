@@ -21,6 +21,7 @@ export interface Package {
     address: string
   }
   payment: {
+    currency: string
     amount: number
     isPaid: boolean
     method?: 'none' | 'Credit Card' | 'PayPal' | 'Bank Transfer' | 'Cash'

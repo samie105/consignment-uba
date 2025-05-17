@@ -54,6 +54,7 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
       payment: {
         ...packageData.payment,
         isVisible: packageData.payment.isVisible ?? true,
+        currency: packageData.payment.currency ?? "USD",
       },
       images: packageData.images || [],
       pdfs: packageData.pdfs || [],
@@ -249,10 +250,35 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
                   name="payment.amount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Amount ($)</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} />
-                      </FormControl>
+                      <FormLabel>Amount</FormLabel>
+                      <div className="flex gap-2">
+                        <FormControl>
+                          <Input type="number" step="0.01" {...field} />
+                        </FormControl>
+                        <FormField
+                          control={form.control}
+                          name="payment.currency"
+                          render={({ field: currencyField }) => (
+                            <FormItem className="w-32 flex-shrink-0">
+                              <Select onValueChange={currencyField.onChange} defaultValue={currencyField.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Currency" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="USD">USD ($)</SelectItem>
+                                  <SelectItem value="EUR">EUR (€)</SelectItem>
+                                  <SelectItem value="GBP">GBP (£)</SelectItem>
+                                  <SelectItem value="BTC">Bitcoin (₿)</SelectItem>
+                                  <SelectItem value="ETH">Ethereum (Ξ)</SelectItem>
+                                  <SelectItem value="USDT">Tether (₮)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -293,6 +319,10 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
                             <SelectItem value="PayPal">PayPal</SelectItem>
                             <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
                             <SelectItem value="Cash">Cash</SelectItem>
+                            <SelectItem value="Bitcoin">Bitcoin</SelectItem>
+                            <SelectItem value="Ethereum">Ethereum</SelectItem>
+                            <SelectItem value="USDT">USDT</SelectItem>
+                            <SelectItem value="Other Crypto">Other Cryptocurrency</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

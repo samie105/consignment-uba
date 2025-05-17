@@ -112,6 +112,160 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
     // Only show if the payment.isVisible flag is true
     return !!packageData.payment?.isVisible;
   }
+
+  // Helper function to get currency symbol based on currency code
+  const getCurrencySymbol = (currency: string) => {
+    switch (currency) {
+      case "USD":
+        return "$"
+      case "EUR":
+        return "€"
+      case "GBP":
+        return "£"
+      case "JPY":
+        return "¥"
+      case "CNY":
+        return "¥"
+      case "INR":
+        return "₹"
+      case "BRL":
+        return "R$"
+      case "RUB":
+        return "₽"
+      case "ZAR":
+        return "R"
+      case "TRY":
+        return "₺"
+      case "CHF":
+        return "CHF"
+      case "SEK":
+      case "NOK":
+      case "DKK":
+        return "kr"
+      case "SGD":
+      case "HKD":
+      case "TWD":
+        return "$"
+      case "MYR":
+        return "RM"
+      case "PHP":
+        return "₱"
+      case "THB":
+        return "฿"
+      case "IDR":
+        return "Rp"
+      case "VND":
+        return "₫"
+      case "KRW":
+        return "₩"
+      case "BDT":
+        return "৳"
+      case "NGN":
+        return "₦"
+      case "ZMW":
+        return "K"
+      case "XAF":
+        return "FCF"
+      case "XCD":
+        return "$"
+      case "XOF":
+        return "CFA"
+      case "XPF":
+        return "CFPF"
+      case "YER":
+      case "OMR":
+      case "QAR":
+      case "SAR":
+        return "﷼"
+      case "AED":
+        return "د.إ"
+      case "BHD":
+        return ".د.ب"
+      case "KWD":
+        return "د.ك"
+      case "LYD":
+        return "د.ل"
+      case "JOD":
+        return "د.ج"
+      case "EGP":
+        return "ج.م"
+      case "IQD":
+        return "د.ع"
+      case "KZT":
+        return "₸"
+      case "TND":
+        return "د.ت"
+      case "BGN":
+        return "лв"
+      case "HRK":
+        return "kn"
+      case "CZK":
+        return "Kč"
+      case "PLN":
+        return "zł"
+      case "RSD":
+        return "дин"
+      case "RON":
+        return "lei"
+      case "HUF":
+        return "Ft"
+      case "ISK":
+        return "kr"
+      case "BAM":
+        return "KM"
+      case "MKD":
+        return "ден"
+      case "MDL":
+        return "lei"
+      case "MNT":
+        return "₮"
+      case "MZN":
+        return "MT"
+      case "ARS":
+      case "CLP":
+      case "COP":
+      case "PEN":
+      case "UYU":
+        return "$"
+      case "VEF":
+      case "BOB":
+        return "Bs"
+      case "PAB":
+      case "CUC":
+      case "CUP":
+      case "DOP":
+      case "SVC":
+      case "TTD":
+        return "$"
+      case "GTQ":
+        return "Q"
+      case "HNL":
+        return "L"
+      case "NIO":
+        return "C$"
+      case "UZS":
+        return "лв"
+      case "VED":
+        return "₾"
+      case "VES":
+        return "Bs"
+      case "BTC":
+        return "₿"
+      case "ETH":
+        return "Ξ"
+      case "USDT":
+        return "₮"
+      default:
+        return "$"
+    }
+  }
+
+  // Helper function to check if a payment method is cryptocurrency
+  const isCryptoCurrency = (method: string): boolean => {
+    const cryptoMethods = ["Bitcoin", "Ethereum", "USDT", "Other Crypto", "Cryptocurrency"];
+    return cryptoMethods.includes(method);
+  }
+
   console.log(packageData)
 
   return (
@@ -269,12 +423,12 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
             >
               Package Details
             </TabsTrigger>
-            <TabsTrigger
+            {/* <TabsTrigger
               value="images"
               className="text-[10px] sm:text-sm w-full md:text-base data-[state=active]:bg-primary/30"
             >
               Package Images
-            </TabsTrigger>
+            </TabsTrigger> */}
           </TabsList>
 
           {/* Tracking History Tab */}
@@ -287,6 +441,30 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
                 </CardHeader>
                 <CardContent>
                   <div className="relative">
+                    {/* Current Location Card */}
+                    <div className="mb-6">
+                      <Card className="border border-primary/20 bg-primary/5">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="rounded-full bg-primary/20 p-2 mt-1">
+                              <MapPin className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-lg mb-1">Current Location</h3>
+                              <p className="text-muted-foreground">
+                                {packageData.current_location?.address || "Not specified yet"}
+                              </p>
+                              {packageData.status !== "delivered" && (
+                                <Badge className={`mt-2 ${getStatusColor(packageData.status)} text-white`}>
+                                  {getStatusText(packageData.status)}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
                     <div className="space-y-8">
                       {packageData.checkpoints.map((checkpoint, index) => (
                         <motion.div
@@ -303,18 +481,20 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
                         >
                           {/* Timeline dot */}
                           <div
-                            className={`absolute left-0 overflow-visible top-1.5 h-6 w-6 rounded-full border-2 border-background flex items-center justify-center z-20 ${
-                              index === 0
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted-foreground/20 text-muted-foreground"
-                            }`}
-                          >
+                            className={`absolute left-0 overflow-visible top-1.5 h-6 w-6 rounded-full border-2 border-background flex items-center justify-center z-20 ${getStatusColor(checkpoint.status) + " text-white"
+                              }`}
+                          >   
                             {index < packageData.checkpoints.length - 1 && (
-                              <div className="absolute top-9 md:top-8 w-0 border z-50 h-40 md:h-28 border-primary/50 border-dashed" />
+                              <div className="absolute top-9 md:top-8 w-0 border z-50 h-40 md:h-28 border-foreground/20 border-dashed" />
                             )}
-                            {index === 0 && <CheckCircle className="h-4 w-4" />}
-                            {index > 0 && <div className="h-2 bg-primary animate-ping w-2 rounded-full" />}
-                          </div>
+                          {checkpoint.status === "delivered" || checkpoint.status === "arrived"? (
+                              <CheckCircle className="h-4 w-4" />
+                            ) : checkpoint.status === "pending" ? (
+                              <MapPin className="h-4 w-4" />
+                            ) : (
+                              <MapPin className="h-4 w-4 animate-pulse" />
+                            )}
+ </div>
 
                           {/* Checkpoint content */}
                           <div
@@ -454,7 +634,9 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
                               <div className="flex flex-col sm:flex-row sm:gap-2">
                                 <dt className="text-sm font-medium text-muted-foreground sm:w-40">Amount:</dt>
                                 <dd className="font-medium">
-                                  {packageData.payment && packageData.payment.amount ? `$${Number(packageData.payment.amount).toFixed(2)}` : 'Not specified'}
+                                  {packageData.payment && packageData.payment.amount ? 
+                                    `${getCurrencySymbol(packageData.payment.currency || 'USD')}${Number(packageData.payment.amount).toFixed(2)} ${packageData.payment.currency || 'USD'}` 
+                                    : 'Not specified'}
                                 </dd>
                               </div>
                               <div className="flex flex-col sm:flex-row sm:gap-2">
@@ -473,7 +655,19 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
                               </div>
                               <div className="flex flex-col sm:flex-row sm:gap-2">
                                 <dt className="text-sm font-medium text-muted-foreground sm:w-40">Payment Method:</dt>
-                                <dd>{packageData.payment && packageData.payment.method ? packageData.payment.method : 'Not specified'}</dd>
+                                <dd>
+                                  {packageData.payment && packageData.payment.method ? (
+                                    <span className="flex items-center">
+                                      {isCryptoCurrency(packageData.payment.method) ? (
+                                        <Badge className="bg-blue-500 text-white">
+                                          {packageData.payment.method} (Crypto)
+                                        </Badge>
+                                      ) : (
+                                        packageData.payment.method
+                                      )}
+                                    </span>
+                                  ) : 'Not specified'}
+                                </dd>
                               </div>
                             </>
                           )}
@@ -536,7 +730,7 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
           </TabsContent>
 
           {/* Package Images Tab */}
-          <TabsContent value="images">
+          {/* <TabsContent value="images">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
               <Card>
                 <CardHeader>
@@ -558,7 +752,7 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
                 </CardContent>
               </Card>
             </motion.div>
-          </TabsContent>
+          </TabsContent> */}
         </Tabs>
       </motion.div>
     </motion.div>
