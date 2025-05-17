@@ -307,12 +307,6 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
             >
               Package Details
             </TabsTrigger>
-            <TabsTrigger
-              value="images"
-              className="text-[10px] sm:text-sm w-full md:text-base data-[state=active]:bg-primary/30"
-            >
-              Package Images
-            </TabsTrigger>
           </TabsList>
 
           {/* Tracking History Tab */}
@@ -546,31 +540,6 @@ export default function PackageTrackingDetails({ tracking_number }: { tracking_n
                       )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </TabsContent>
-
-          {/* Package Images Tab */}
-          <TabsContent value="images">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Package Images</CardTitle>
-                  <CardDescription>Visual documentation of your package throughout its journey</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {packageData.images && packageData.images.length > 0 ? (
-                    <PackageImageGallery images={packageData.images} />
-                  ) : (
-                    <div className="text-center py-12">
-                      <Package className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                      <h3 className="text-lg font-medium mb-2">No Images Available</h3>
-                      <p className="text-sm text-muted-foreground">
-                        There are no images available for this package yet.
-                      </p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </motion.div>

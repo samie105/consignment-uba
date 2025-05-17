@@ -60,16 +60,17 @@ export default function RealPackageMap({
 
     // Initialize map if it doesn't exist
     if (mapRef.current && !leafletMapRef.current) {
-      // Default coordinates if current_location is null
-      const defaultCoordinates = [0, 0]
-      const coordinates = packageData.current_location 
-        ? [packageData.current_location.latitude, packageData.current_location.longitude]
-        : defaultCoordinates
+      // Default coordinates if current_location is null or has invalid coordinates
+      const defaultCoordinates: [number, number] = [0, 0]
+      let coordinates = defaultCoordinates
       
-      leafletMapRef.current = L.map(mapRef.current).setView(
-        coordinates as [number, number],
-        5,
-      )
+      if (packageData.current_location && 
+          typeof packageData.current_location.latitude === 'number' && 
+          typeof packageData.current_location.longitude === 'number') {
+        coordinates = [packageData.current_location.latitude, packageData.current_location.longitude]
+      }
+      
+      leafletMapRef.current = L.map(mapRef.current).setView(coordinates, 5)
 
       // Add OpenStreetMap tile layer
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -90,7 +91,9 @@ export default function RealPackageMap({
       })
 
       // Add current location marker with custom icon if we have valid coordinates
-      if (packageData.current_location) {
+      if (packageData.current_location && 
+          typeof packageData.current_location.latitude === 'number' && 
+          typeof packageData.current_location.longitude === 'number') {
         const currentLocationIcon = L.divIcon({
           className: "custom-div-icon",
           html: `<div style="background-color: #ef4444; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>`,
@@ -113,7 +116,9 @@ export default function RealPackageMap({
           .map((cp) => [cp.coordinates.lat, cp.coordinates.lng] as [number, number])
 
         // Add the current location to the path if it exists
-        if (packageData.current_location) {
+        if (packageData.current_location && 
+            typeof packageData.current_location.latitude === 'number' && 
+            typeof packageData.current_location.longitude === 'number') {
           checkpointCoordinates.push([packageData.current_location.latitude, packageData.current_location.longitude])
         }
 
@@ -129,12 +134,35 @@ export default function RealPackageMap({
           // Add checkpoint markers
           checkpoints.forEach((checkpoint, index) => {
             if (checkpoint.coordinates && checkpoint.coordinates.lat && checkpoint.coordinates.lng) {
+              // Determine if this is the last checkpoint
+              const isLastCheckpoint = index === 0;
+              
+              // Determine icon style based on status and whether it's the last checkpoint
+              let iconHtml;
+              if (isLastCheckpoint) {
+                // Pulsing location icon for the last checkpoint
+                iconHtml = `<div style="position: relative;">
+                  <div style="background-color: #3b82f6; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; z-index: 1;"></div>
+                  <div style="position: absolute; top: -5px; left: -5px; background-color: rgba(59, 130, 246, 0.5); width: 26px; height: 26px; border-radius: 50%; animation: pulse 1.5s infinite; z-index: 0;"></div>
+                </div>`;
+              } else if (checkpoint.status === "delivered" || checkpoint.status === "arrived") {
+                // Check icon for delivered or arrived checkpoints
+                iconHtml = `<div style="background-color: #22c55e; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>`;
+              } else {
+                // Location icon for other checkpoints
+                iconHtml = `<div style="background-color: #9ca3af; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white;"></div>`;
+              }
+
               const checkpointIcon = L.divIcon({
                 className: "custom-div-icon",
-                html: `<div style="background-color: ${checkpoint.isCompleted ? "#22c55e" : "#9ca3af"}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
-                iconSize: [12, 12],
-                iconAnchor: [6, 6],
-              })
+                html: iconHtml,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10],
+              });
 
               L.marker([checkpoint.coordinates.lat, checkpoint.coordinates.lng], { icon: checkpointIcon })
                 .addTo(map)
@@ -142,7 +170,7 @@ export default function RealPackageMap({
                   <b>${checkpoint.status}</b><br>
                   ${checkpoint.location}<br>
                   <small>${new Date(checkpoint.timestamp).toLocaleString()}</small><br>
-                  ${checkpoint.details}
+                  ${checkpoint.details || ''}
                 `)
             }
           })
@@ -151,12 +179,24 @@ export default function RealPackageMap({
           map.fitBounds(path.getBounds(), { padding: [30, 30] })
         } else {
           // If there's only one point, center on it
-          map.setView([packageData.current_location.latitude, packageData.current_location.longitude], 10)
+          if (packageData.current_location && 
+              typeof packageData.current_location.latitude === 'number' && 
+              typeof packageData.current_location.longitude === 'number') {
+            map.setView([packageData.current_location.latitude, packageData.current_location.longitude], 10)
+          } else {
+            // Default view if no valid coordinates
+            map.setView([0, 0], 2)
+          }
         }
       } else {
         // If not showing checkpoints, just center on current location if it exists
-        if (packageData.current_location) {
+        if (packageData.current_location && 
+            typeof packageData.current_location.latitude === 'number' && 
+            typeof packageData.current_location.longitude === 'number') {
           map.setView([packageData.current_location.latitude, packageData.current_location.longitude], 10)
+        } else {
+          // Default view if no valid coordinates
+          map.setView([0, 0], 2)
         }
       }
     }
@@ -171,11 +211,29 @@ export default function RealPackageMap({
   }, [packageData, checkpoints, showCheckpoints])
 
   return (
-    <div
-      ref={mapRef}
-      className="w-full rounded-lg border overflow-hidden"
-      style={{ height }}
-      aria-label="Package location map"
-    />
+    <>
+      <style jsx global>{`
+        @keyframes pulse {
+          0% {
+            transform: scale(0.95);
+            opacity: 0.7;
+          }
+          50% {
+            transform: scale(1.1);
+            opacity: 0.4;
+          }
+          100% {
+            transform: scale(0.95);
+            opacity: 0.7;
+          }
+        }
+      `}</style>
+      <div
+        ref={mapRef}
+        className="w-full rounded-lg border overflow-hidden"
+        style={{ height }}
+        aria-label="Package location map"
+      />
+    </>
   )
 }

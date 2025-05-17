@@ -164,7 +164,7 @@ export function CreatePackageForm() {
 
   return (
     <Tabs defaultValue="details" className="w-full">
-      <TabsList className="grid w-full grid-cols-5">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="details" className="flex items-center justify-center">
           <LucidePackage className="h-4 w-4 mr-2 md:mr-2" />
           <span className="hidden sm:inline">Package Details</span>
@@ -180,10 +180,6 @@ export function CreatePackageForm() {
         <TabsTrigger value="tracking" className="flex items-center justify-center">
           <Clock className="h-4 w-4 mr-2 md:mr-2" />
           <span className="hidden sm:inline">Tracking</span>
-        </TabsTrigger>
-        <TabsTrigger value="images" className="flex items-center justify-center">
-          <ImageIcon className="h-4 w-4 mr-2 md:mr-2" />
-          <span className="hidden sm:inline">Images</span>
         </TabsTrigger>
       </TabsList>
 
@@ -744,38 +740,6 @@ export function CreatePackageForm() {
               }}
               allowCustomTime={true}
             />
-          </TabsContent>
-
-          <TabsContent value="images" className="space-y-4 pt-4">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Package Images</h3>
-              <p className="text-sm text-muted-foreground">
-                Upload images of the package for documentation and verification purposes. This is optional and can be
-                added later.
-              </p>
-
-              {images.length > 0 ? (
-                <FileUpload onUpload={handleImageUrlsChange} initialFiles={images} maxFiles={5} />
-              ) : (
-                <div className="text-center p-6 border rounded-lg bg-muted/20 mb-4">
-                  <ImageIcon className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-                  <h3 className="text-lg font-medium mb-1">No Images Yet</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Package images will be updated as the shipment progresses.
-                  </p>
-                  <Button
-                    variant="outline"
-                    className="mt-4"
-                    onClick={() => document.getElementById("upload-images-button")?.click()}
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Images
-                  </Button>
-                </div>
-              )}
-
-              {images.length === 0 && <FileUpload onUpload={handleImageUrlsChange} initialFiles={images} maxFiles={5} />}
-            </div>
           </TabsContent>
 
           <div className="flex justify-end space-x-2 pt-4 border-t">

@@ -134,21 +134,21 @@ export default function Footer() {
                 <li className="flex items-start">
                   <MapPin className="h-5 w-5 mr-2 mt-0.5 text-muted-foreground" />
                   <span className="text-muted-foreground">
-                    123 Delivery Street<br />
-                    Shipping City, 12345<br />
+                    795 Sunset Ridge Lane<br />
+                    Sacramento, CA 95826<br />
                     United States
                   </span>
                 </li>
                 <li className="flex items-center">
                   <Phone className="h-5 w-5 mr-2 text-muted-foreground" />
-                  <a href="tel:+1234567890" className="text-muted-foreground hover:text-foreground transition-colors">
-                    +1 (234) 567-890
+                  <a href="tel:+13098683754" className="text-muted-foreground hover:text-foreground transition-colors">
+                    +1 (309) 868-3754
                   </a>
                 </li>
                 <li className="flex items-center">
                   <Mail className="h-5 w-5 mr-2 text-muted-foreground" />
-                  <a href="mailto:info@Greenroute Delivery.com" className="text-muted-foreground hover:text-foreground transition-colors">
-                    info@Greenroute Delivery.com
+                  <a href="mailto:support@greenrouteservice.pro" className="text-muted-foreground hover:text-foreground transition-colors">
+                    support@greenrouteservice.pro
                   </a>
                 </li>
               </ul>

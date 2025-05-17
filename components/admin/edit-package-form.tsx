@@ -83,7 +83,7 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
         console.log("Tab changed to:", value);
         console.log("Current form checkpoints:", form.getValues("checkpoints"));
       }}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="details" className="flex items-center justify-center">
             <LucidePackage className="h-4 w-4 mr-2 md:mr-2" />
             <span className="hidden sm:inline">Package Details</span>
@@ -99,10 +99,6 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
           <TabsTrigger value="tracking" className="flex items-center justify-center">
             <Clock className="h-4 w-4 mr-2 md:mr-2" />
             <span className="hidden sm:inline">Tracking</span>
-          </TabsTrigger>
-          <TabsTrigger value="images" className="flex items-center justify-center">
-            <ImageIcon className="h-4 w-4 mr-2 md:mr-2" />
-            <span className="hidden sm:inline">Images</span>
           </TabsTrigger>
         </TabsList>
 
@@ -588,17 +584,6 @@ export function EditPackageForm({ packageData, onSuccess = () => {} }: EditPacka
                     <FormMessage />
                   </FormItem>
                 )}
-              />
-            </TabsContent>
-
-            <TabsContent value="images" className="space-y-4 pt-4">
-              <FileUpload
-                onUpload={(files) => {
-                  setImages(files)
-                  form.setValue("images", files)
-                }}
-                initialFiles={images}
-                maxFiles={5}
               />
             </TabsContent>
 
