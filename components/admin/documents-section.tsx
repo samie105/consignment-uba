@@ -162,7 +162,7 @@ export function DocumentsSection({ packageData, onPDFUploaded }: DocumentsSectio
             </div>
           )}
 
-          <div className="flex justify-end pt-4">
+          {/* <div className="flex justify-end pt-4">
             <Button
               onClick={handleGeneratePDF}
               disabled={isGenerating || (!autoGenerate && !uploadedPDF)}
@@ -180,7 +180,7 @@ export function DocumentsSection({ packageData, onPDFUploaded }: DocumentsSectio
                 </>
               )}
             </Button>
-          </div>
+          </div> */}
         </div>
       </CardContent>
     </Card>

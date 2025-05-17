@@ -396,17 +396,17 @@ export default function ExportPDFButton({ packageData }: { packageData: PackageD
     }
   }
 
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      className="flex items-center gap-1"
-      onClick={handleGeneratePDF}
-      disabled={isGenerating}
-    >
-      <FileDown className="h-4 w-4" />
-      <span>{isGenerating ? "Generating..." : "Export PDF"}</span>
-    </Button>
+  return (<></>
+    // <Button
+    //   variant="outline"
+    //   size="sm"
+    //   className="flex items-center gap-1"
+    //   onClick={handleGeneratePDF}
+    //   disabled={isGenerating}
+    // >
+    //   <FileDown className="h-4 w-4" />
+    //   <span>{isGenerating ? "Generating..." : "Export PDF"}</span>
+    // </Button>
   )
 }
 
