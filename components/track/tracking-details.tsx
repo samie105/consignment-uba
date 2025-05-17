@@ -74,6 +74,8 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
         return "bg-amber-500"
       case "customs_hold":
         return "bg-orange-500"
+      case "package_declared":
+        return "bg-red-500"
       case "pending":
         return "bg-yellow-500"
       case "exception":
@@ -96,6 +98,10 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
         return "Customs Check"
       case "customs_hold":
         return "Customs Clearance (ON HOLD)"
+      case "package_declared":
+        return "PACKAGE TO BE DECLARED ⚠️"
+      case "customs_cleared":
+        return "CUSTOMS CLEARANCE CLEARED"
       case "delivered":
         return "Delivered"
       case "pending":
@@ -111,153 +117,6 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
   const shouldShowPayment = () => {
     // Only show if the payment.isVisible flag is true
     return !!packageData.payment?.isVisible;
-  }
-
-  // Helper function to get currency symbol based on currency code
-  const getCurrencySymbol = (currency: string) => {
-    switch (currency) {
-      case "USD":
-        return "$"
-      case "EUR":
-        return "€"
-      case "GBP":
-        return "£"
-      case "JPY":
-        return "¥"
-      case "CNY":
-        return "¥"
-      case "INR":
-        return "₹"
-      case "BRL":
-        return "R$"
-      case "RUB":
-        return "₽"
-      case "ZAR":
-        return "R"
-      case "TRY":
-        return "₺"
-      case "CHF":
-        return "CHF"
-      case "SEK":
-      case "NOK":
-      case "DKK":
-        return "kr"
-      case "SGD":
-      case "HKD":
-      case "TWD":
-        return "$"
-      case "MYR":
-        return "RM"
-      case "PHP":
-        return "₱"
-      case "THB":
-        return "฿"
-      case "IDR":
-        return "Rp"
-      case "VND":
-        return "₫"
-      case "KRW":
-        return "₩"
-      case "BDT":
-        return "৳"
-      case "NGN":
-        return "₦"
-      case "ZMW":
-        return "K"
-      case "XAF":
-        return "FCF"
-      case "XCD":
-        return "$"
-      case "XOF":
-        return "CFA"
-      case "XPF":
-        return "CFPF"
-      case "YER":
-      case "OMR":
-      case "QAR":
-      case "SAR":
-        return "﷼"
-      case "AED":
-        return "د.إ"
-      case "BHD":
-        return ".د.ب"
-      case "KWD":
-        return "د.ك"
-      case "LYD":
-        return "د.ل"
-      case "JOD":
-        return "د.ج"
-      case "EGP":
-        return "ج.م"
-      case "IQD":
-        return "د.ع"
-      case "KZT":
-        return "₸"
-      case "TND":
-        return "د.ت"
-      case "BGN":
-        return "лв"
-      case "HRK":
-        return "kn"
-      case "CZK":
-        return "Kč"
-      case "PLN":
-        return "zł"
-      case "RSD":
-        return "дин"
-      case "RON":
-        return "lei"
-      case "HUF":
-        return "Ft"
-      case "ISK":
-        return "kr"
-      case "BAM":
-        return "KM"
-      case "MKD":
-        return "ден"
-      case "MDL":
-        return "lei"
-      case "MNT":
-        return "₮"
-      case "MZN":
-        return "MT"
-      case "ARS":
-      case "CLP":
-      case "COP":
-      case "PEN":
-      case "UYU":
-        return "$"
-      case "VEF":
-      case "BOB":
-        return "Bs"
-      case "PAB":
-      case "CUC":
-      case "CUP":
-      case "DOP":
-      case "SVC":
-      case "TTD":
-        return "$"
-      case "GTQ":
-        return "Q"
-      case "HNL":
-        return "L"
-      case "NIO":
-        return "C$"
-      case "UZS":
-        return "лв"
-      case "VED":
-        return "₾"
-      case "VES":
-        return "Bs"
-      case "BTC":
-        return "₿"
-      case "ETH":
-        return "Ξ"
-      case "USDT":
-        return "₮"
-      default:
-        return "$"
-    }
   }
 
   // Helper function to check if a payment method is cryptocurrency
@@ -340,7 +199,7 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
                   packageData.status,
                 )}`}
               >
-                {packageData.statusText}
+                {getStatusText(packageData.status)}
               </Badge>
             </div>
           </CardHeader>
@@ -506,7 +365,7 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
                           >
                             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
                               <h3 className={index === 0 ? "font-semibold text-primary" : "font-semibold"}>
-                                {checkpoint.status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                {getStatusText(checkpoint.status)}
                               </h3>
                               <p className="text-sm text-muted-foreground flex items-center">
                                 <Clock className="h-3 w-3 mr-1 inline" />
@@ -635,7 +494,7 @@ export function TrackingDetails({ packageData }: { packageData: PackageData }) {
                                 <dt className="text-sm font-medium text-muted-foreground sm:w-40">Amount:</dt>
                                 <dd className="font-medium">
                                   {packageData.payment && packageData.payment.amount ? 
-                                    `${getCurrencySymbol(packageData.payment.currency || 'USD')}${Number(packageData.payment.amount).toFixed(2)} ${packageData.payment.currency || 'USD'}` 
+                                    String(packageData.payment.amount) 
                                     : 'Not specified'}
                                 </dd>
                               </div>

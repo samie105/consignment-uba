@@ -101,27 +101,27 @@ export default function Footer() {
               <h3 className="text-lg font-semibold mb-4">Services</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/services/domestic" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                     Domestic Shipping
                   </Link>
                 </li>
                 <li>
-                  <Link href="/services/international" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                     International Shipping
                   </Link>
                 </li>
                 <li>
-                  <Link href="/services/express" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                     Express Delivery
                   </Link>
                 </li>
                 <li>
-                  <Link href="/services/ecommerce" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                     E-commerce Solutions
                   </Link>
                 </li>
                 <li>
-                  <Link href="/services/business" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                     Business Shipping
                   </Link>
                 </li>
@@ -141,13 +141,13 @@ export default function Footer() {
                 </li>
                 <li className="flex items-center">
                   <Phone className="h-5 w-5 mr-2 text-muted-foreground" />
-                  <a href="tel:+13098683754" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                     +1 (309) 868-3754
                   </a>
                 </li>
                 <li className="flex items-center">
                   <Mail className="h-5 w-5 mr-2 text-muted-foreground" />
-                  <a href="mailto:support@greenrouteservice.pro" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                     support@greenrouteservice.pro
                   </a>
                 </li>
@@ -162,13 +162,13 @@ export default function Footer() {
               &copy; {currentYear} Greenroute Delivery. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Terms of Service
               </Link>
-              <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Privacy Policy
               </Link>
-              <Link href="/cookies" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Cookie Policy
               </Link>
             </div>

@@ -56,8 +56,7 @@ const formSchema = z.object({
     isPaid: z.boolean().optional().default(false),
     method: z.string().optional().default("none"),
     isVisible: z.boolean().default(true),
-    currency: z.string().optional().default("USD"),
-  }).optional().default({amount: 0, isPaid: false, method: "none", isVisible: true, currency: "USD"}),
+  }).optional().default({amount: 0, isPaid: false, method: "none", isVisible: true}),
   images: z.array(z.string()).optional().default([]),
   pdfs: z.array(z.string()).optional().default([]),
   checkpoints: z.array(z.object({
@@ -116,7 +115,6 @@ export function CreatePackageForm() {
         isPaid: false,
         method: "none",
         isVisible: true,
-        currency: "USD",
       },
       images: [],
       pdfs: [],
@@ -347,34 +345,11 @@ export function CreatePackageForm() {
                 name="payment.amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Amount</FormLabel>
+                    <FormLabel>Amount (include currency symbol)</FormLabel>
                     <div className="flex gap-2">
                       <FormControl>
-                        <Input type="number" step="0.01" {...field} />
+                        <Input type="text" {...field} placeholder="e.g. $100, €50, ₿0.002" />
                       </FormControl>
-                      <FormField
-                        control={form.control}
-                        name="payment.currency"
-                        render={({ field }) => (
-                          <FormItem className="w-32 flex-shrink-0">
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Currency" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="USD">USD ($)</SelectItem>
-                                <SelectItem value="EUR">EUR (€)</SelectItem>
-                                <SelectItem value="GBP">GBP (£)</SelectItem>
-                                <SelectItem value="BTC">Bitcoin (₿)</SelectItem>
-                                <SelectItem value="ETH">Ethereum (Ξ)</SelectItem>
-                                <SelectItem value="USDT">Tether (₮)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )}
-                      />
                     </div>
                     <FormMessage />
                   </FormItem>
