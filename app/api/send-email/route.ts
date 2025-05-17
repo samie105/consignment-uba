@@ -249,7 +249,7 @@ function createAdminEmailHtml(packageData: any, formData: any): string {
           </div>
           
           <div class="footer">
-            <p>This is an automated message from the Transivio system.</p>
+            <p>This is an automated message from the Greenroute Delivery system.</p>
           </div>
         </div>
       </body>

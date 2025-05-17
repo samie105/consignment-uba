@@ -141,7 +141,7 @@ export default function SponsorsSection() {
         >
           <h2 className="text-3xl font-bold mb-4">Our Trusted Partners</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Transivio collaborates with industry-leading partners to provide comprehensive delivery solutions
+            Greenroute Delivery collaborates with industry-leading partners to provide comprehensive delivery solutions
             worldwide. These strategic alliances enhance our service quality and global reach, ensuring reliable
             delivery experiences for all our customers.
           </p>

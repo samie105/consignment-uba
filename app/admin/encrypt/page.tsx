@@ -29,7 +29,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 export default function AdminEncryptPage() {
   const [activeTab, setActiveTab] = useState("encrypt")
   const [content, setContent] = useState("")
-  const [key, setKey] = useState("Transivio")
+  const [key, setKey] = useState("Greenroute Delivery")
   const [encrypted, setEncrypted] = useState("")
   const [decrypted, setDecrypted] = useState("")
   const [encryptedInput, setEncryptedInput] = useState("")

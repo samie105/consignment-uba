@@ -66,7 +66,7 @@ export default function AdminSidebar({ className, user }: SidebarProps) {
           {isOpen ? (
             <Link href="/admin/dashboard" className="flex items-center gap-2">
               <Package className="h-6 w-6" />
-              <span className="font-bold">Transivio</span>
+              <span className="font-bold">Greenroute Delivery</span>
             </Link>
           ) : (
             <Link href="/admin/dashboard" className="flex items-center justify-center">

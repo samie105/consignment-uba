@@ -70,7 +70,7 @@ export default function LoginForm() {
               id="email"
               name="email"
               type="email"
-              placeholder="admin@Transivio.com"
+              placeholder="admin@Greenroute Delivery.com"
               required
               autoComplete="email"
             />
@@ -112,7 +112,7 @@ export default function LoginForm() {
       </CardContent>
       <CardFooter className="flex flex-col">
         <p className="text-xs text-center text-muted-foreground mt-2">
-          Demo credentials: admin@Transivio.com / delivery123
+          Demo credentials: admin@Greenroute Delivery.com / delivery123
         </p>
       </CardFooter>
     </Card>

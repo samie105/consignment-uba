@@ -53,7 +53,7 @@ export function decryptFromEnv(encryptedContent: string, key: string): string {
 // Component to decrypt and display protected content
 export function ProtectedContent({
   encryptedContent,
-  encryptionKey = "Transivio",
+  encryptionKey = "Greenroute Delivery",
   fallback = "Loading...",
   as: Component = "div",
   className = "",
@@ -90,7 +90,7 @@ export function ProtectedContent({
 }
 
 // Hook to use protected content
-export function useProtectedContent(encryptedContent: string, encryptionKey = "Transivio") {
+export function useProtectedContent(encryptedContent: string, encryptionKey = "Greenroute Delivery") {
   const [content, setContent] = useState<string>("")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -121,13 +121,13 @@ export interface ContentSection {
 // Local storage helpers for admin
 export function saveContentSections(sections: ContentSection[]) {
   if (typeof window !== "undefined") {
-    localStorage.setItem("Transivio_content_sections", JSON.stringify(sections))
+    localStorage.setItem("Greenroute Delivery_content_sections", JSON.stringify(sections))
   }
 }
 
 export function getContentSections(): ContentSection[] {
   if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("Transivio_content_sections")
+    const stored = localStorage.getItem("Greenroute Delivery_content_sections")
     if (stored) {
       try {
         return JSON.parse(stored)

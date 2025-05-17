@@ -15,7 +15,7 @@ const testimonials = [
     name: "Sarah Johnson",
     role: "E-commerce Business Owner",
     content:
-      "Transivio has transformed our logistics operations. Their reliable service and real-time tracking have significantly reduced our shipping delays and improved customer satisfaction. The specialized handling for fragile items has been a game-changer for our business.",
+      "Greenroute Delivery has transformed our logistics operations. Their reliable service and real-time tracking have significantly reduced our shipping delays and improved customer satisfaction. The specialized handling for fragile items has been a game-changer for our business.",
     avatar:
       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/testimonial-sarah.jpg-9xMINf0xoO07BlNSGk002hkIAhQowI.jpeg",
     rating: 5,
@@ -24,7 +24,7 @@ const testimonials = [
     name: "Michael Chen",
     role: "International Trader",
     content:
-      "As someone who ships products globally, I've tried many delivery services, but Transivio stands out with their exceptional international shipping solutions. Their customs expertise has saved me countless hours and prevented costly delays.",
+      "As someone who ships products globally, I've tried many delivery services, but Greenroute Delivery stands out with their exceptional international shipping solutions. Their customs expertise has saved me countless hours and prevented costly delays.",
     avatar:
       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/testimonial-micheal-30m3HrXyAz5c6QfL7TK6VkF7lJAzV7.png",
     rating: 5,
@@ -33,7 +33,7 @@ const testimonials = [
     name: "Emma Rodriguez",
     role: "Small Business Owner",
     content:
-      "The customer service at Transivio is unmatched. When I had an urgent shipment that needed special handling, their team went above and beyond to ensure it arrived on time. Their dedication to their clients is truly impressive.",
+      "The customer service at Greenroute Delivery is unmatched. When I had an urgent shipment that needed special handling, their team went above and beyond to ensure it arrived on time. Their dedication to their clients is truly impressive.",
     avatar:
       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/testimonial-emma.jpg-vjYslXT1Be5FPe4DBuwZBscUofYKMF.jpeg",
     rating: 5,
@@ -42,7 +42,7 @@ const testimonials = [
     name: "David Patel",
     role: "Logistics Manager",
     content:
-      "We've reduced our shipping costs by 30% since switching to Transivio while improving delivery times. Their integrated solutions approach has streamlined our entire supply chain. I highly recommend their services to any business looking to optimize their logistics.",
+      "We've reduced our shipping costs by 30% since switching to Greenroute Delivery while improving delivery times. Their integrated solutions approach has streamlined our entire supply chain. I highly recommend their services to any business looking to optimize their logistics.",
     avatar: "/placeholder.svg?height=100&width=100",
     rating: 4,
   },

@@ -191,7 +191,7 @@ export default function Header() {
           <Box className="siz4-8"/>
           <Link href="/" className="flex items-start">
             <div className="h-10 w-auto flex items-center justify-center relative">
-              <svg width="130" height="30" viewBox="0 0 130 30" xmlns="http://www.w3.org/2000/svg">
+              <svg width="250" height="30" viewBox="0 0 250 30" xmlns="http://www.w3.org/2000/svg">
                 <style>
                   {`
                     @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500&display=swap');
@@ -231,7 +231,7 @@ export default function Header() {
 
                 <rect width="100" height="30" fill="transparent" />
                 
-                <text x="5" y="22">TRANSIVIO</text>
+                <text x="5" y="22">Greenroute Delivery</text>
               </svg>
             </div>
           </Link>
@@ -374,7 +374,7 @@ export default function Header() {
                     <div className="flex items-center space-x-2">
                     <div className="h-10 w-auto flex items-center justify-center relative">
                       <Box className="siz4-8"/>
-              <svg width="130" height="30" viewBox="0 0 130 30" xmlns="http://www.w3.org/2000/svg">
+              <svg width="300" height="30" viewBox="0 0 300 30" xmlns="http://www.w3.org/2000/svg">
                 <style>
                   {`
                     @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500&display=swap');
@@ -384,21 +384,21 @@ export default function Header() {
                       font-size: 16px;
                       stroke: currentColor;
                       stroke-width: 1;
-                      stroke-dasharray: 300;
-                      stroke-dashoffset: 300;
+                      stroke-dasharray: 500;
+                      stroke-dashoffset: 500;
                       fill: currentColor;
                       fill-opacity: 0;
                       animation: strokeAnim 10s cubic-bezier(0.25, 0.1, 0.25, 1) infinite, fillAnim 10s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
                       animation-delay: 0s;
-                      letter-spacing:3px;
+                      letter-spacing:1.5px;
                     }
 
                     @keyframes strokeAnim {
-                      0%   { stroke-dashoffset: 300; }
+                      0%   { stroke-dashoffset: 500; }
                       20%  { stroke-dashoffset: 0; }
                       60%  { stroke-dashoffset: 0; }
-                      80%  { stroke-dashoffset: 300; }
-                      100% { stroke-dashoffset: 300; }
+                      80%  { stroke-dashoffset: 500; }
+                      100% { stroke-dashoffset: 500; }
                     }
 
                     @keyframes fillAnim {
@@ -412,9 +412,9 @@ export default function Header() {
                   `}
                 </style>
 
-                <rect width="100" height="30" fill="transparent" />
+                <rect width="300" height="30" fill="transparent" />
                 
-                <text x="5" y="22">TRANSIVIO</text>
+                <text x="5" y="22">Greenroute Delivery</text>
               </svg>
             </div>
                     </div>

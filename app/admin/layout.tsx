@@ -6,8 +6,8 @@ import { redirect } from "next/navigation"
 import { Toaster } from "sonner"
 
 export const metadata: Metadata = {
-  title: "Admin Dashboard | Transivio",
-  description: "Manage your delivery operations with Transivio admin dashboard",
+  title: "Admin Dashboard | Greenroute Delivery",
+  description: "Manage your delivery operations with Greenroute Delivery admin dashboard",
 }
 
 export default async function AdminLayout({

@@ -93,11 +93,11 @@ export default function Contact() {
                   <p className="text-muted-foreground text-sm">
                     Customer Support:
                     <br />
-                    support@Transivio.com
+                    support@Greenroute Delivery.com
                     <br />
                     Business Inquiries:
                     <br />
-                    info@Transivio.com
+                    info@Greenroute Delivery.com
                   </p>
                 </CardContent>
               </Card>

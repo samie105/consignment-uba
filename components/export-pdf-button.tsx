@@ -125,7 +125,7 @@ export default function ExportPDFButton({ packageData }: { packageData: PackageD
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text('Transivio', pageWidth - margin, 30, { align: 'right' });
+      doc.text('Greenroute Delivery', pageWidth - margin, 30, { align: 'right' });
       
       try {
         // Generate QR code and place it on the right side of the header
@@ -372,7 +372,7 @@ export default function ExportPDFButton({ packageData }: { packageData: PackageD
       doc.setTextColor(100, 100, 100);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text('Transivio', margin, pageHeight - 6);
+      doc.text('Greenroute Delivery', margin, pageHeight - 6);
       
       doc.setFont('helvetica', 'normal');
       doc.text(`Generated on: ${generatedDate}`, pageWidth - margin, pageHeight - 6, { align: 'right' });
