@@ -6,7 +6,7 @@ import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Save } from "lucide-react"
+import { Save, MapPin } from "lucide-react"
 import { updatePackageLocation } from "@/server/actions/packageActions"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -81,43 +81,79 @@ const LocationPicker = forwardRef<LocationPickerRef, LocationPickerProps>(
       }
     }
 
-    const handleLocationUpdate = async (lat: number, lng: number) => {
-      const address = await getAddressFromCoordinates(lat, lng)
-      const location = { lat, lng, address }
+    const handleLocationUpdate = async (lat: number, lng: number, manualAddress?: string) => {
+      let finalAddress = manualAddress
+      
+      // Only try to get address from coordinates if no manual address is provided
+      if (!finalAddress) {
+        finalAddress = await getAddressFromCoordinates(lat, lng)
+      }
+      
+      const location = { lat, lng, address: finalAddress }
       setCurrentLocation(location)
-      setAddress(address)
+      setAddress(finalAddress)
       if (onLocationChange) {
         onLocationChange(location)
       }
       return location
     }
 
-    const handleAddressChange = async (newAddress: string) => {
+    const handleAddressChange = (newAddress: string) => {
       setAddress(newAddress)
-      if (!newAddress.trim()) return
+      
+      // Update current location with manual address if coordinates exist
+      if (currentLocation) {
+        const updatedLocation = {
+          ...currentLocation,
+          address: newAddress
+        }
+        setCurrentLocation(updatedLocation)
+        if (onLocationChange) {
+          onLocationChange(updatedLocation)
+        }
+      }
+    }
+
+    const handleGeocodeAddress = async () => {
+      if (!address.trim()) return
 
       setIsGeocoding(true)
-      const location = await getCoordinatesFromAddress(newAddress)
+      const location = await getCoordinatesFromAddress(address)
       setIsGeocoding(false)
 
       if (location && markerRef.current && leafletMapRef.current) {
         const { lat, lng, display_name } = location
         markerRef.current.setLatLng([lat, lng])
         leafletMapRef.current.setView([lat, lng], 13)
-        await handleLocationUpdate(lat, lng)
+        await handleLocationUpdate(lat, lng, display_name)
         setAddress(display_name)
+      } else {
+        // If geocoding fails, still allow saving with manual address
+        if (currentLocation) {
+          await handleLocationUpdate(currentLocation.lat, currentLocation.lng, address)
+        } else {
+          // Create a location with default coordinates but manual address
+          const defaultLocation = { lat: 0, lng: 0, address }
+          setCurrentLocation(defaultLocation)
+          if (onLocationChange) {
+            onLocationChange(defaultLocation)
+          }
+        }
       }
     }
 
     const handleSaveLocation = async () => {
-      if (!currentLocation || !tracking_number) return
+      // Allow saving even if we only have an address without coordinates
+      const locationToSave = currentLocation || { lat: 0, lng: 0, address }
+      
+      if (!tracking_number) return
 
       setIsUpdating(true)
       try {
         const result = await updatePackageLocation(tracking_number, {
-          latitude: currentLocation.lat,
-          longitude: currentLocation.lng,
-          address: currentLocation.address
+          latitude: locationToSave.lat,
+          longitude: locationToSave.lng,
+          address: locationToSave.address || address
         })
 
         if (result.success) {
@@ -141,7 +177,7 @@ const LocationPicker = forwardRef<LocationPickerRef, LocationPickerProps>(
 
     useImperativeHandle(ref, () => ({
       getLocation: async () => {
-        return currentLocation
+        return currentLocation || { lat: 0, lng: 0, address }
       }
     }))
 
@@ -185,7 +221,7 @@ const LocationPicker = forwardRef<LocationPickerRef, LocationPickerProps>(
       })
 
       if (initialLocation) {
-        handleLocationUpdate(initialLocation.latitude, initialLocation.longitude)
+        handleLocationUpdate(initialLocation.latitude, initialLocation.longitude, initialLocation.address)
       }
 
       setIsMapInitialized(true)
@@ -211,17 +247,26 @@ const LocationPicker = forwardRef<LocationPickerRef, LocationPickerProps>(
 
     return (
       <div className="space-y-4">
-        <div className="flex gap-4">
+        <div className="flex gap-2">
           <Input 
             value={address}
             onChange={(e) => handleAddressChange(e.target.value)}
-            placeholder="Enter location or click on map"
+            placeholder="Enter location manually or use map"
             className="flex-1"
           />
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={handleGeocodeAddress}
+            disabled={isGeocoding || !address.trim()}
+            title="Find location on map"
+          >
+            <MapPin className="h-4 w-4" />
+          </Button>
           {tracking_number && (
             <Button 
               onClick={handleSaveLocation} 
-              disabled={isUpdating || !currentLocation || isGeocoding}
+              disabled={isUpdating || (!currentLocation && !address.trim())}
             >
               <Save className="h-4 w-4 mr-2" />
               {isUpdating ? "Saving..." : "Save Location"}
