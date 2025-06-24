@@ -89,9 +89,12 @@ const LocationPicker = forwardRef<LocationPickerRef, LocationPickerProps>(
         finalAddress = await getAddressFromCoordinates(lat, lng)
       }
       
-      const location = { lat, lng, address: finalAddress }
+      // Ensure address is always a string
+      const addressString = finalAddress || "Unknown location"
+      
+      const location = { lat, lng, address: addressString }
       setCurrentLocation(location)
-      setAddress(finalAddress)
+      setAddress(addressString)
       if (onLocationChange) {
         onLocationChange(location)
       }
